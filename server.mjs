@@ -94,7 +94,7 @@ export async function createPortal(options={}){
   fail(404,'Unknown endpoint.');
  }
  if(!['GET','HEAD'].includes(method))fail(405,'Method not allowed.');let file=decodeURIComponent(path.slice(1)||'index.html');if(!allowedFiles.has(file))fail(404,'Not found.');
- const data=await readFile(join(root,file)),mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml'}[extname(file)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':file.endsWith('.html')?'no-cache':'public, max-age=300'});res.end(method==='HEAD'?undefined:data);
+ const data=await readFile(join(root,file)),mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml'}[extname(file)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.css'].includes(extname(file))?'no-cache':'public, max-age=300'});res.end(method==='HEAD'?undefined:data);
  }catch(e){if(res.headersSent){res.end();return;}json(res,e.status||500,{error:e.status?e.message:'The server could not complete this request.'});if(!e.status)console.error('Portal request failed:',e.name);}
  });
  return{server,db,close:async()=>{clearInterval(sweep);await new Promise(resolve=>server.close(resolve));db.close();}};

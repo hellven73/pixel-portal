@@ -11,7 +11,7 @@ const root=dirname(fileURLToPath(import.meta.url));
 export function verifyTicket(ticket,secret){try{if(!secret||typeof ticket!=='string'||ticket.length>1024)return false;const[payload,signature]=ticket.split('.');const expected=createHmac('sha256',secret).update(payload).digest();const actual=Buffer.from(signature||'','base64url');if(actual.length!==expected.length||!timingSafeEqual(actual,expected))return false;const data=JSON.parse(Buffer.from(payload,'base64url'));const now=Math.floor(Date.now()/1000);return Number.isSafeInteger(data.sub)&&Number.isSafeInteger(data.exp)&&data.exp>now&&data.exp<=now+3600;}catch{return false;}}
 export function createBrowserServer(options={}){
  const secret=options.secret??process.env.PROXY_SHARED_SECRET;if(!secret||secret.length<32)throw new Error('Set PROXY_SHARED_SECRET to a random value of at least 32 characters.');
- logging.set_level(logging.NONE);Object.assign(wisp.options,{allow_udp_streams:false,allow_private_ips:false,allow_loopback_ips:false,allow_direct_ip:false,port_whitelist:[80,443],stream_limit_total:32,stream_limit_per_host:12});
+ logging.set_level(logging.WARN);Object.assign(wisp.options,{dns_result_order:'ipv4first',allow_udp_streams:false,allow_private_ips:false,allow_loopback_ips:false,allow_direct_ip:false,port_whitelist:[80,443],stream_limit_total:32,stream_limit_per_host:12});
  const server=createServer(async(req,res)=>{
  res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');res.setHeader('Cross-Origin-Resource-Policy','cross-origin');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
  try{
