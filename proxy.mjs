@@ -7,7 +7,7 @@ import {server as wisp,logging} from '@mercuryworkshop/wisp-js/server';
 import {scramjetPath} from '@mercuryworkshop/scramjet/path';
 import {libcurlPath} from '@mercuryworkshop/libcurl-transport';
 import {baremuxPath} from '@mercuryworkshop/bare-mux/node';
-const root=dirname(fileURLToPath(import.meta.url));
+const root=dirname(fileURLToPath(import.meta.url)),epoxyPath=dirname(fileURLToPath(import.meta.resolve('@mercuryworkshop/epoxy-transport')));
 export function verifyTicket(ticket,secret){try{if(!secret||typeof ticket!=='string'||ticket.length>1024)return false;const[payload,signature]=ticket.split('.');const expected=createHmac('sha256',secret).update(payload).digest();const actual=Buffer.from(signature||'','base64url');if(actual.length!==expected.length||!timingSafeEqual(actual,expected))return false;const data=JSON.parse(Buffer.from(payload,'base64url'));const now=Math.floor(Date.now()/1000);return Number.isSafeInteger(data.sub)&&Number.isSafeInteger(data.exp)&&data.exp>now&&data.exp<=now+3600;}catch{return false;}}
 export function createBrowserServer(options={}){
  const secret=options.secret??process.env.PROXY_SHARED_SECRET;if(!secret||secret.length<32)throw new Error('Set PROXY_SHARED_SECRET to a random value of at least 32 characters.');
@@ -17,7 +17,7 @@ export function createBrowserServer(options={}){
  try{
  const url=new URL(req.url,'http://proxy.invalid');if(url.pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end('{"ok":true}');}
  if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end();}
- const paths=[['/scram/',scramjetPath],['/libcurl/',libcurlPath],['/baremux/',baremuxPath]];let path=null;
+ const paths=[['/scram/',scramjetPath],['/libcurl/',libcurlPath],['/epoxy/',epoxyPath],['/baremux/',baremuxPath]];let path=null;
  for(const[prefix,base]of paths)if(url.pathname.startsWith(prefix)){const file=resolve(base,decodeURIComponent(url.pathname.slice(prefix.length)));if(!file.startsWith(resolve(base)+sep)){res.writeHead(403);return res.end();}path=file;}
  if(['/','/browser.html'].includes(url.pathname))path=resolve(root,'browser.html');if(['/browser.js','/sw.js'].includes(url.pathname))path=resolve(root,url.pathname.slice(1));
  if(!path){res.writeHead(404);return res.end('Not found');}

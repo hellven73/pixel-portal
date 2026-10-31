@@ -5,7 +5,7 @@ An independent rebuild of the public features at the reference site. This reposi
 ## What is implemented
 
 - **Games:** 4,440 catalogue entries from GMShelf, Fruit, GN Math, Seraph and Truffled, with search, source filters, pagination, favourites and embedded launchers. Game files and artwork remain on their existing external hosts. Some upstream paths are broken; catalogue membership does not guarantee a working game. The eight original offline games remain as an optional collection.
-- **Browser:** real Scramjet 1.1.0, Bare-Mux, Libcurl Transport and Wisp-JS, served on a separate origin. Signed ten-minute tickets require a Pixel account before opening Wisp. Private-network and loopback destinations are blocked. Only destination ports 80/443 are enabled.
+- **Browser:** real Scramjet 1.1.0, Bare-Mux, Epoxy Transport and Wisp-JS, served on a separate origin. Signed ten-minute tickets require a Pixel account before opening Wisp. Private-network and loopback destinations are blocked. Only destination ports 80/443 are enabled.
 - **Accounts:** username/password registration and login, scrypt password hashes, expiring HTTP-only sessions and account save records.
 - **Chat:** actual shared text channels with saved messages and deletion of your own messages. Voice calls, DMs and federation with the reference site's users are not implemented.
 - **Marketplace:** 107 public reference listings (renamed where they include the old branding), real virtual-coin debits, duplicate-purchase protection, inventory, equipment, daily claims and local membership-pass expiry. Asset links remain external. These items do not grant benefits on the original site. New accounts start with 2,500 virtual coins; there are no real-money transactions.
