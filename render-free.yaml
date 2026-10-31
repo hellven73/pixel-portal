@@ -1,0 +1,44 @@
+# Free preview only: database is ephemeral and can reset on deploy/restart.
+services:
+  - type: web
+    name: hellven73-pixel-browser
+    runtime: node
+    region: singapore
+    plan: free
+    repo: https://github.com/hellven73/pixel-portal
+    branch: main
+    buildCommand: npm ci --ignore-scripts
+    startCommand: npm run start:browser
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: hellven73-pixel-access
+      - key: NODE_VERSION
+        value: "24"
+  - type: web
+    name: hellven73-pixel-portal
+    runtime: node
+    region: singapore
+    plan: free
+    repo: https://github.com/hellven73/pixel-portal
+    branch: main
+    buildCommand: npm ci --ignore-scripts
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - fromGroup: hellven73-pixel-access
+      - key: NODE_VERSION
+        value: "24"
+      - key: DB_PATH
+        value: ./data/portal.sqlite
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: PROXY_HOSTNAME
+        fromService:
+          name: hellven73-pixel-browser
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+envVarGroups:
+  - name: hellven73-pixel-access
+    envVars:
+      - key: PROXY_SHARED_SECRET
+        generateValue: true

@@ -1,0 +1,50 @@
+# Paid persistent app + free isolated browser service.
+# Do not apply without approving the app's compute and disk charges.
+# Approximate base: US$7/month compute + US$0.25/month for a 1 GB disk.
+services:
+  - type: web
+    name: hellven73-pixel-browser
+    runtime: node
+    region: singapore
+    plan: free
+    repo: https://github.com/hellven73/pixel-portal
+    branch: main
+    buildCommand: npm ci --ignore-scripts
+    startCommand: npm run start:browser
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: hellven73-pixel-access
+      - key: NODE_VERSION
+        value: "24"
+  - type: web
+    name: hellven73-pixel-portal
+    runtime: node
+    region: singapore
+    plan: 0.5c-512mb
+    repo: https://github.com/hellven73/pixel-portal
+    branch: main
+    buildCommand: npm ci --ignore-scripts
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: pixel-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - fromGroup: hellven73-pixel-access
+      - key: NODE_VERSION
+        value: "24"
+      - key: DB_PATH
+        value: /var/data/portal.sqlite
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: PROXY_HOSTNAME
+        fromService:
+          name: hellven73-pixel-browser
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+envVarGroups:
+  - name: hellven73-pixel-access
+    envVars:
+      - key: PROXY_SHARED_SECRET
+        generateValue: true

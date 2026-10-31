@@ -61,12 +61,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#entrance').hidd
 window.addEventListener('resize',()=>{if(!$('#entrance').hidden)starfield();});
 $('#reduce-motion').onchange=e=>{reduced=e.target.checked;storage.set('reduced',reduced);document.documentElement.classList.toggle('reduce-motion',reduced);if(!$('#entrance').hidden)starfield();};
 $('#show-entrance').checked=storage.get('showEntrance',true);$('#show-entrance').onchange=e=>storage.set('showEntrance',e.target.checked);
-let view='home';const titles={home:'Home',games:'Arcade',browse:'Explore',music:'Music',notes:'Notebook',themes:'Appearance'};
+let view='home';const titles={home:'Home',games:'Arcade',browse:'Browser',music:'Music',notes:'Notebook',themes:'Appearance',chat:'Chat',ai:'Assistant',market:'Marketplace',emulator:'Emulator'};
 function setView(next,updateHash=true){
  if(!Object.hasOwn(titles,next))next='home';view=next;
  $$('[data-page]').forEach(s=>s.hidden=s.dataset.page!==view);$$('nav [data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);if(b.dataset.view===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
  $('#page-name').textContent=titles[view];document.title=`${titles[view]} — Pixel Portal`;
- if(updateHash)history.replaceState(null,'',`#${view}`);window.scrollTo(0,0);
+ if(updateHash)history.replaceState(null,'',`#${view}`);window.scrollTo(0,0);window.dispatchEvent(new CustomEvent('pixel:navigate',{detail:view}));
 }
 document.addEventListener('click',e=>{const target=e.target.closest('[data-view]');if(target)setView(target.dataset.view);});
 $('#theme-shortcut').onclick=()=>setView('themes');
@@ -91,7 +91,7 @@ function gameCard(game){
 }
 function renderGames(){
  const query=$('#game-search').value.trim().toLowerCase();const selected=games.filter(g=>(filter==='all'||filter===g.category||(filter==='favorites'&&favorites.includes(g.id)))&&g.name.toLowerCase().includes(query));
- $('#game-grid').replaceChildren(...selected.map(gameCard));$('#games-empty').hidden=selected.length>0;$('#home-games').replaceChildren(...games.slice(0,4).map(gameCard));
+ $('#game-grid').replaceChildren(...selected.map(gameCard));$('#games-empty').hidden=selected.length>0;if($('#home-games'))$('#home-games').replaceChildren(...games.slice(0,4).map(gameCard));
 }
 $$('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;$$('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));renderGames();});$('#game-search').oninput=renderGames;renderGames();
 let gameCleanup=()=>{},currentGame=null;
@@ -101,7 +101,7 @@ $('#restart-game').onclick=()=>{if(currentGame){stopGame();$('#game-mount').repl
 $('#close-game').onclick=()=>$('#game-dialog').close();$('#game-dialog').addEventListener('close',stopGame);$('#game-dialog').addEventListener('click',e=>{if(e.target===e.currentTarget){const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.currentTarget.close();}});
 // Search and bookmarks. Protocols are deliberately limited to web addresses.
 function webAddress(value){try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:null;}catch{return null;}}
-function navigateSearch(value){const q=value.trim();if(!q)return;let address=webAddress(q);if(!address&&/^([a-z0-9-]+\.)+[a-z]{2,}(\/|$)/i.test(q))address=webAddress(`https://${q}`);if(!address){const engine=$('#search-engine').value;const base=engine==='google'?'https://www.google.com/search?q=':engine==='bing'?'https://www.bing.com/search?q=':'https://duckduckgo.com/?q=';address=base+encodeURIComponent(q);}window.open(address,'_blank','noopener,noreferrer');}
+function navigateSearch(value){const q=value.trim();if(!q)return;let address=webAddress(q);if(!address&&/^([a-z0-9-]+\.)+[a-z]{2,}(\/|$)/i.test(q))address=webAddress(`https://${q}`);if(!address){const engine=$('#search-engine').value;const base=engine==='google'?'https://www.google.com/search?q=':engine==='bing'?'https://www.bing.com/search?q=':'https://duckduckgo.com/?q=';address=base+encodeURIComponent(q);}if(window.PixelServices)window.PixelServices.browse(address);else toast('The browser is still starting. Try again in a moment.');}
 for(const form of $$('#home-search,#browse-search'))form.onsubmit=e=>{e.preventDefault();navigateSearch($('input',form).value);};
 const defaultBookmarks=[{id:'pixel',name:'Pixel Arcade',url:'https://hellven73.github.io/pixel-arcade/'},{id:'youtube',name:'YouTube',url:'https://www.youtube.com/'},{id:'github',name:'GitHub',url:'https://github.com/'},{id:'wikipedia',name:'Wikipedia',url:'https://www.wikipedia.org/'},{id:'spotify',name:'Spotify',url:'https://open.spotify.com/'},{id:'scratch',name:'Scratch',url:'https://scratch.mit.edu/'}];
 let bookmarks=storage.get('bookmarks',defaultBookmarks);if(!Array.isArray(bookmarks))bookmarks=defaultBookmarks;bookmarks=bookmarks.filter(b=>typeof b.name==='string'&&webAddress(b.url));
@@ -132,13 +132,13 @@ async function playAmbient(){
  playing=true;updateAudioUI();
  }catch{toast('Audio could not start in this browser. Try a local audio file.');}
 }
-function chooseTrack(index){const wasPlaying=playing;stopAmbient();trackIndex=index;$('#track-title').textContent=tracks[index].name;$('#home-track').textContent=tracks[index].name;$('#track-detail').textContent=tracks[index].description;$$('.track-option').forEach((b,i)=>{b.classList.toggle('selected',i===index);b.setAttribute('aria-pressed',String(i===index));});updateAudioUI();if(wasPlaying)playAmbient();}
+function chooseTrack(index){const wasPlaying=playing;stopAmbient();trackIndex=index;$('#track-title').textContent=tracks[index].name;if($('#home-track'))$('#home-track').textContent=tracks[index].name;$('#track-detail').textContent=tracks[index].description;$$('.track-option').forEach((b,i)=>{b.classList.toggle('selected',i===index);b.setAttribute('aria-pressed',String(i===index));});updateAudioUI();if(wasPlaying)playAmbient();}
 $('#ambient-list').replaceChildren(...tracks.map((t,i)=>{const b=document.createElement('button');b.className=`track-option${i===0?' selected':''}`;b.setAttribute('aria-pressed',String(i===0));b.innerHTML=`<span>${t.symbol}</span><div><strong>${t.name}</strong><small>${t.detail}</small></div><span>0${i+1}</span>`;b.onclick=()=>chooseTrack(i);return b;}));
 for(const b of $$('#home-play,#ambient-play,#sound-toggle'))b.onclick=playAmbient;
 $('#volume').oninput=()=>{const volume=Number($('#volume').value)/100;if(master)master.gain.value=volume*.14;localAudio.volume=volume;};
 localAudio.volume=.35;localAudio.addEventListener('play',stopAmbient);
 $('#audio-upload').onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.type&&!file.type.startsWith('audio/')){toast('Please choose an audio file.');return;}stopAmbient();if(audioUrl)URL.revokeObjectURL(audioUrl);audioUrl=URL.createObjectURL(file);localAudio.src=audioUrl;localAudio.hidden=false;toast(`Ready to play: ${file.name}`);};
 localAudio.addEventListener('error',()=>toast('This audio format is not supported by your browser.'));
-for(let i=0;i<40;i++){const bar=document.createElement('i');bar.style.height=`${4+Math.abs(Math.sin(i*.9)*Math.cos(i*.3))*20}px`;$('.equalizer').append(bar);}
+for(let i=0;i<40;i++){const bar=document.createElement('i');bar.style.height=`${4+Math.abs(Math.sin(i*.9)*Math.cos(i*.3))*20}px`;$('.equalizer')?.append(bar);}
 updateAudioUI();
 if(!$('#show-entrance').checked){$('#entrance').hidden=true;$('#app').hidden=false;}else starfield();
