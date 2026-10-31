@@ -76,3 +76,9 @@ Provider-tab launches, Katsugachi game entries and Fern catch-all routes have be
 Twelve featured embeds use the individual iframe URLs exposed by leveldevil-unblocked.github.io, rather than embedding its catalogue pages. All twelve game documents returned HTTP 200 without iframe-blocking headers during the audit; Level Devil rendered in the embedded player. GPU-dependent gameplay could not be fully verified in the cloud browser, which lacks WebGL. Those entries now show a graphics requirement before launch. Sixteen direct webports remain after removing four landing/setup pages.
 
 Chat fills the visible viewport with a fixed shell and a shrinking message list. Its composer and user panel stay at the bottom; mobile visual-viewport resizing and safe-area padding accommodate browser chrome and keyboards.
+
+### Existing account service
+
+Set `ARCADE_API_ORIGIN` to the owner's original Pixel Arcade service to use its existing persistent database directly. Password hashes, profiles, DMs, messages, servers, roles and wallet history remain in that database. The Render server translates the original bearer protocol into same-origin HttpOnly cookies and strips session tokens from browser responses. Outages return an explicit error rather than silently switching to an empty local database. The legacy Portal utility database remains separate.
+
+FrameX accepts the configured administrator's authenticated session, preserving the optional developer-password gate for other authorized developers. Regular player accounts receive no developer access.

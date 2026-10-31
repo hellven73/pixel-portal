@@ -8,7 +8,7 @@ import {createPortal} from './server.mjs';
 async function harness(t,options={}){
  const app=await createPortal({dbPath:':memory:',adminUsername:'owner_test',...options});app.server.listen(0,'127.0.0.1');await once(app.server,'listening');t.after(()=>app.close());
  const base=`http://127.0.0.1:${app.server.address().port}`;
- async function request(path,{data,cookie,method=data?'POST':'GET',origin=base}={}){const r=await fetch(base+'/arcade-api/'+path,{method,headers:{Origin:origin,...(data?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined});return{status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0]};}
+ async function request(path,{data,cookie,method=data?'POST':'GET',origin=base}={}){const r=await fetch(base+'/arcade-api/'+path,{method,headers:{Origin:origin,...(data?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined});return{status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0],setCookie:r.headers.get('set-cookie')};}
  async function register(username){const r=await request('auth/register',{data:{username,password:'Test-passphrase-3456!'}});assert.equal(r.status,201,JSON.stringify(r.data));assert.ok(!('token' in r.data));return r;}
  return{app,base,request,register};
 }
@@ -95,4 +95,27 @@ test('catalogues reject provider redirects and removed minigames while retaining
  const catalogue=JSON.parse(await readFile(new URL('./catalogue.json',import.meta.url)));assert.ok(catalogue.games.every(allowed));const featured=catalogue.games.filter(g=>g.source==='Featured embeds');assert.equal(featured.length,12);assert.equal(new Set(featured.map(g=>g.url)).size,12);assert.ok(featured.every(g=>g.inlineOnly&&new URL(g.url).hostname==='10minutestilldawnonline.github.io'));
  const {prepareArcade}=await import('./arcade-runtime.mjs');const app=await prepareArcade();const originals=JSON.parse(await readFile(join(app.directory,'originals.json'),'utf8'));assert.deepEqual(originals.map(g=>g.name),['Slope']);assert.ok(originals.every(allowed));
  const ports=JSON.parse(await readFile(new URL('./webports.json',import.meta.url)));assert.ok(ports.games.every(allowed));assert.equal(allowed({id:'slope',embed:'./slope.html'}),true);
+});
+
+test('existing-service bridge preserves account credentials and records with HttpOnly sessions',async t=>{
+ const {createArcade}=await import('./arcade-runtime.mjs');const original=await createArcade({dbPath:':memory:',adminUsername:'owner_test'});t.after(()=>original.close());
+ const origin='https://existing-arcade.example';let originalToken='';
+ // Emulate the original GitHub bearer transport using the same real account database.
+ const oldFetch=async(input,init)=>{const incoming=input instanceof Request?input:new Request(input,init);assert.equal(incoming.headers.get('origin'),'https://hellven73.github.io');assert.equal(incoming.headers.get('x-pixel-client'),'github-pages');assert.equal(incoming.headers.get('OAI-Sites-Authorization'),'Bearer test-service-access');const headers=new Headers(incoming.headers);headers.set('Origin',origin);headers.set('X-Pixel-Client','pixel-arcade');const token=/^Bearer ([a-f0-9]{64})$/.exec(headers.get('authorization')||'')?.[1];if(token)headers.set('Cookie','__Host-px-session='+token);const response=await original.fetch(new Request(incoming,{headers}));const data=await response.json().catch(()=>null);if(response.ok&&/\/api\/auth\/(login|register)$/.test(new URL(incoming.url).pathname)){const session=/__Host-px-session=([a-f0-9]{64})/.exec(response.headers.get('set-cookie')||'')?.[1];return Response.json({...data,token:session,remember:true,expiresAt:Date.now()+86400000},{status:response.status});}return Response.json(data,{status:response.status});};
+ const oldRequest=async(path,data)=>{const r=await oldFetch(new Request(origin+'/api/'+path,{method:data?'POST':'GET',headers:{Origin:'https://hellven73.github.io','X-Pixel-Client':'github-pages','OAI-Sites-Authorization':'Bearer test-service-access',...(originalToken?{Authorization:'Bearer '+originalToken}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})}));assert.ok(r.status<400,await r.clone().text());return r.json();};
+ originalToken=(await oldRequest('auth/register',{username:'owner_test',password:'Original-passphrase-6789!',remember:true})).token;
+ await oldRequest('chat',{action:'send',server:'pixel-public-lobby',channel:'pixel-public-general',body:'Original database message'});
+ await oldRequest('roles',{action:'create',name:'Original role',color:'#aabbcc',position:1,moderate:false});
+ const before=await oldRequest('marketplace');
+ const options={arcadeApiOrigin:origin,arcadeServiceAuthorization:'test-service-access',arcadeFetch:oldFetch};const h=await harness(t,options);
+ const login=await h.request('auth/login',{data:{username:'owner_test',password:'Original-passphrase-6789!',remember:true}});assert.equal(login.status,200);assert.ok(login.cookie);assert.match(login.setCookie,/HttpOnly/);assert.match(login.setCookie,/SameSite=Lax/);assert.ok(!('token' in login.data));
+ const profile=await h.request('profile',{cookie:login.cookie});assert.equal(profile.data.username,'owner_test');assert.equal(profile.data.isAdmin,true);
+ const chat=await h.request('chat?server=pixel-public-lobby&channel=pixel-public-general',{cookie:login.cookie});assert.ok(chat.data.messages.some(m=>m.body==='Original database message'));
+ const roles=await h.request('roles',{cookie:login.cookie});assert.ok(JSON.stringify(roles.data).includes('Original role'));
+ assert.equal((await h.request('marketplace',{cookie:login.cookie})).data.coins,before.coins);
+ const restarted=await harness(t,options);assert.equal((await restarted.request('profile',{cookie:login.cookie})).data.username,'owner_test');
+ const framex=await restarted.request('dev/framex?status=1',{cookie:login.cookie});assert.equal(framex.data.unlocked,true);assert.equal(framex.data.adminAccess,true);
+ assert.equal((await restarted.request('dev/framex',{cookie:login.cookie})).status,200);assert.equal((await restarted.request('dev/framex')).status,401);
+ const stranger=await restarted.register('regular_test');assert.equal((await restarted.request('dev/framex?status=1',{cookie:stranger.cookie})).data.unlocked,false);
+ await h.request('auth/logout',{cookie:login.cookie,data:{}});assert.equal((await restarted.request('profile',{cookie:login.cookie})).data.authenticated,false);
 });

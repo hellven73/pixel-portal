@@ -5,7 +5,8 @@ import {promisify} from 'node:util';
 import {readFile,mkdir} from 'node:fs/promises';
 import {dirname,extname,join} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {createArcade} from './arcade-runtime.mjs';
+import {createArcade,prepareArcade} from './arcade-runtime.mjs';
+import {remoteArcade} from './remote-arcade.mjs';
 const scrypt=promisify(scryptCb),root=dirname(fileURLToPath(import.meta.url));
 export const products=JSON.parse(await readFile(join(root,'shop-data.json'),'utf8'));
 class HttpError extends Error{constructor(status,message){super(message);this.status=status;}}
@@ -30,7 +31,8 @@ export async function createPortal(options={}){
  const activeUsers=new Map();const limits=new Map(),roomNames=['general','gaming','help'];
  let catalogue=JSON.parse(await readFile(join(root,'catalogue.json'),'utf8'));
  const config={proxyOrigin:options.proxyOrigin??process.env.PROXY_ORIGIN??(process.env.PROXY_HOSTNAME?'https://'+process.env.PROXY_HOSTNAME:''),proxySecret:options.proxySecret??process.env.PROXY_SHARED_SECRET??'',aiBase:options.aiBase??process.env.AI_BASE_URL??'',aiKey:options.aiKey??process.env.AI_API_KEY??'',aiModel:options.aiModel??process.env.AI_MODEL??'',allowLocalAI:process.env.AI_ALLOW_LOCAL==='1'};
- const arcade=await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,adminUsername:options.adminUsername});
+ const arcadeApiOrigin=options.arcadeApiOrigin??process.env.ARCADE_API_ORIGIN;
+ const arcade=arcadeApiOrigin?{...await prepareArcade(),fetch:remoteArcade({origin:arcadeApiOrigin,fetcher:options.arcadeFetch,serviceAuthorization:options.arcadeServiceAuthorization??process.env.ARCADE_SERVICE_AUTHORIZATION}),close:()=>{}}:await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,adminUsername:options.adminUsername});
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
  const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
@@ -49,7 +51,7 @@ export async function createPortal(options={}){
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
  if(path.startsWith('/arcade-api/')){
   if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
-  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:process.env.STORAGE_MODE==='ephemeral',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
+  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
   csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
   for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
   const protocol=req.headers['x-forwarded-proto']==='https'||process.env.COOKIE_SECURE==='1'?'https':'http';
