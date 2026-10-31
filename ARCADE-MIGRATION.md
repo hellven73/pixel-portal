@@ -6,7 +6,7 @@ Included: public and private chat servers/channels, edit/delete/reactions/pins/s
 
 ## Source and packaging
 
-All 133 app files, including the original vendored licenses and Slope assets, are in `arcade-app.tar.gz`. `arcade-manifest.json` records the upstream commit, filenames and SHA-256 of the bundle. This is a deployable source bundle, not an external website iframe. The Node host verifies and extracts it on startup. To inspect or edit:
+All app source files, including the original vendored licenses and Slope assets, are in `arcade-app.tar.gz`. `arcade-manifest.json` records the upstream commit, filenames and SHA-256 of the bundle. This is a deployable source bundle, not an external website iframe. The Node host verifies and extracts it on startup. To inspect or edit:
 
 ```sh
 mkdir -p arcade-source
@@ -34,3 +34,7 @@ npm test
 ## Validation
 
 `npm test` exercises ownership and moderator boundaries, private DM access and blocks, atomic purchases/gifts, replay-safe grants, multiplayer turns/versions, recovery-code replay and session revocation, legacy account import, source serving restrictions, plus the original Portal checks. Browser QA covers real calculator computation, slides creation/undo, the Code Lab sandbox and representative navigation. External game HTTP responses are link checks, not gameplay proof; hardware/provider limitations must be reported honestly.
+
+## Interface renovation
+
+The shell uses a shared SVG icon set, equal-size header controls, independently scrolling navigation and an aligned sidebar footer. The homepage has a new illustrated hero, a consistent shortcut grid, three collection cards and expandable secondary content. The redesigned welcome includes a centered interactive portal, three sculpture modes, keyboard/pointer interaction, skip/replay and reduced-motion support. Existing feature handlers and saved theme preferences are preserved.

@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/hellven73/pixel-arcade",
   "sourceCommit": "24df2de35ee1b4b9b86e1fbc88a8cdce3b401189",
-  "archiveSha256": "c7c21d426b9c70a4718ea2d4c6c8bd3cc01f3858f825ffc3b426059c6203ae4e",
+  "archiveSha256": "4241de9b2ebeadb2fe7a6ab130dc16c4f9671617ff747aef0f42dcbfda2ab0a3",
   "files": [
     "BACKEND.md",
     "README.md",
@@ -98,6 +98,8 @@
     "referral-ui.js",
     "refinement.css",
     "refinement.js",
+    "renovation.css",
+    "renovation.js",
     "roles-ui.js",
     "school-tools.css",
     "school-tools.js",
@@ -127,6 +129,7 @@
     "terms-gate.js",
     "terms.html",
     "tools.js",
+    "ui-icons.js",
     "vendor-chess-LICENSE",
     "vendor-chess.js",
     "vendor-math-LICENSE",

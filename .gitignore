@@ -8,3 +8,5 @@ data/
 
 arcade-source/
 .arcade-app/
+
+.arcade-app.next.tar.gz
