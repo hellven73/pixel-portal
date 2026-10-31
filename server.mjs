@@ -5,6 +5,7 @@ import {promisify} from 'node:util';
 import {readFile,mkdir} from 'node:fs/promises';
 import {dirname,extname,join} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {createArcade} from './arcade-runtime.mjs';
 const scrypt=promisify(scryptCb),root=dirname(fileURLToPath(import.meta.url));
 export const products=JSON.parse(await readFile(join(root,'shop-data.json'),'utf8'));
 class HttpError extends Error{constructor(status,message){super(message);this.status=status;}}
@@ -29,6 +30,7 @@ export async function createPortal(options={}){
  const activeUsers=new Map();const limits=new Map(),roomNames=['general','gaming','help'];
  let catalogue=JSON.parse(await readFile(join(root,'catalogue.json'),'utf8'));
  const config={proxyOrigin:options.proxyOrigin??process.env.PROXY_ORIGIN??(process.env.PROXY_HOSTNAME?'https://'+process.env.PROXY_HOSTNAME:''),proxySecret:options.proxySecret??process.env.PROXY_SHARED_SECRET??'',aiBase:options.aiBase??process.env.AI_BASE_URL??'',aiKey:options.aiKey??process.env.AI_API_KEY??'',aiModel:options.aiModel??process.env.AI_MODEL??'',allowLocalAI:process.env.AI_ALLOW_LOCAL==='1'};
+ const arcade=await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,adminUsername:options.adminUsername});
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
  const allowedFiles=new Set(['index.html','app.js','services.js','style.css','games.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
@@ -45,6 +47,35 @@ export async function createPortal(options={}){
  if(process.env.COOKIE_SECURE==='1')res.setHeader('Strict-Transport-Security','max-age=15552000');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','credentialless');
  try{
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
+ if(path.startsWith('/arcade-api/')){
+  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:process.env.STORAGE_MODE==='ephemeral',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
+  csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
+  for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
+  const protocol=req.headers['x-forwarded-proto']==='https'||process.env.COOKIE_SECURE==='1'?'https':'http';
+  const origin=req.headers.origin||`${protocol}://${req.headers.host}`;
+  const headers=new Headers();for(const[key,value]of Object.entries(req.headers))if(value&&key!=='host'&&key!=='content-length')headers.set(key,Array.isArray(value)?value.join(','):value);
+  headers.set('cf-connecting-ip',req.socket.remoteAddress||'local');
+  const request=new Request(origin+'/api/'+path.slice('/arcade-api/'.length)+url.search,{method,headers,...(!['GET','HEAD'].includes(method)?{body:Buffer.concat(chunks)}:{})});
+  if(path==='/arcade-api/browser-ticket'&&method==='POST'){
+   const profile=await arcade.fetch(new Request(origin+'/api/profile',{headers}));if(profile.status!==200)fail(401,'Sign in to use the browser.');
+   if(!config.proxyOrigin||!config.proxySecret)fail(503,'The browser server has not been connected yet.');
+   const {username}=await profile.json();const sub=parseInt(sha(username).slice(0,12),16),payload=Buffer.from(JSON.stringify({sub,exp:Math.floor(now()/1000)+600,origin})).toString('base64url'),signature=createHmac('sha256',config.proxySecret).update(payload).digest('base64url');
+   return json(res,200,{origin:config.proxyOrigin,ticket:`${payload}.${signature}`});
+  }
+  const response=await arcade.fetch(request);res.writeHead(response.status,Object.fromEntries(response.headers));return res.end(Buffer.from(await response.arrayBuffer()));
+ }
+ if(path==='/'||path==='/arcade'||path.startsWith('/arcade/')){
+  if(!['GET','HEAD'].includes(method))fail(405,'Method not allowed.');
+  const file=decodeURIComponent(path==='/'||path==='/arcade'||path==='/arcade/'?'index.html':path.slice(8));
+  if(!arcade.files.has(file))fail(404,'Not found.');const data=await readFile(join(arcade.directory,file));
+  // Provider sign-in popups need their opener; the separate Scramjet service keeps isolation.
+  res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');res.removeHeader('Cross-Origin-Embedder-Policy');
+  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.wasm':'application/wasm','.data':'application/octet-stream'}[extname(file)]||'text/plain; charset=utf-8';
+  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:data);
+ }
+ if(path==='/portal'||path==='/portal/'){
+  const html=(await readFile(join(root,'index.html'),'utf8')).replace('<head>','<head><base href="/">');res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(method==='HEAD'?undefined:html);
+ }
  if(path.startsWith('/api/')){
   csrf(req);limit(`all:${req.socket.remoteAddress}`,240);const u=userFor(req);if(u)activeUsers.set(u.id,now());
   if(path==='/api/health'&&method==='GET')return json(res,200,{ok:true,version:'2.1.0',games:catalogue.games.length});
@@ -106,6 +137,6 @@ export async function createPortal(options={}){
  const data=await readFile(join(root,file)),mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml'}[extname(file)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.css'].includes(extname(file))?'no-cache':'public, max-age=300'});res.end(method==='HEAD'?undefined:data);
  }catch(e){if(res.headersSent){res.end();return;}json(res,e.status||500,{error:e.status?e.message:'The server could not complete this request.'});if(!e.status)console.error('Portal request failed:',e.name);}
  });
- return{server,db,close:async()=>{clearInterval(sweep);await new Promise(resolve=>server.close(resolve));db.close();}};
+ return{server,db,arcade,close:async()=>{clearInterval(sweep);await new Promise(resolve=>server.close(resolve));arcade.close();db.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const portal=await createPortal();const port=Number(process.env.PORT)||8080;portal.server.listen(port,'0.0.0.0',()=>console.log(`Pixel Portal listening on ${port}`));for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>portal.close().then(()=>process.exit(0)));}

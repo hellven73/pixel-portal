@@ -5,3 +5,6 @@ data/
 !.env.example
 .openai/
 *.sqlite*
+
+arcade-source/
+.arcade-app/

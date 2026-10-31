@@ -1,4 +1,10 @@
-# Pixel Portal — service-backed rebuild
+# Pixel Arcade + Portal
+
+The main app now includes the full owner-provided Pixel Arcade source, a cleaner shared layout, private DMs/friends, complete chat, admin/moderation/roles, marketplace rewards, multiplayer, advanced calculators and study tools. See [ARCADE-MIGRATION.md](ARCADE-MIGRATION.md) for the full feature list, source bundle, configuration and verification.
+
+Live at https://pixelarcade.com.au/. The earlier Portal remains at `/portal`. Admin access stays disabled until a verified owner account is selected; optional developer TV secrets are not configured. Free Render storage is still ephemeral.
+
+## Retained Portal implementation
 
 An independent rebuild of the public features at the reference site. This repository does **not** contain that site's original server source, accounts, messages, balances, or private data.
 
@@ -7,17 +13,17 @@ An independent rebuild of the public features at the reference site. This reposi
 - **Games:** 4,440 catalogue entries from GMShelf, Fruit, GN Math, Seraph and Truffled, with search, source filters, pagination, favourites and embedded launchers. Game files and artwork remain on their existing external hosts. Some upstream paths are broken; catalogue membership does not guarantee a working game. The eight original offline games remain as an optional collection.
 - **Browser:** real Scramjet 1.1.0, Bare-Mux, Epoxy Transport and Wisp-JS, served on a separate origin. Signed ten-minute tickets require a Pixel account before opening Wisp. Private-network and loopback destinations are blocked. Only destination ports 80/443 are enabled.
 - **Accounts:** username/password registration and login, scrypt password hashes, expiring HTTP-only sessions and account save records.
-- **Chat:** actual shared text channels with saved messages and deletion of your own messages. Voice calls, DMs and federation with the reference site's users are not implemented.
+- **Chat:** actual shared text channels with saved messages and deletion of your own messages. Voice calls and federation with the reference site's users are not implemented. DMs are available in the primary Arcade app.
 - **Marketplace:** 107 public reference listings (renamed where they include the old branding), real virtual-coin debits, duplicate-purchase protection, inventory, equipment, daily claims and local membership-pass expiry. Asset links remain external. These items do not grant benefits on the original site. New accounts start with 2,500 virtual coins; there are no real-money transactions.
 - **AI:** a server-side OpenAI-compatible provider adapter, conversation UI, per-account limits and explicit disconnected status. No model or paid AI account is supplied. Without provider configuration, AI remains unavailable; no canned replies are substituted.
 - **Other:** local-file music playback, three procedural ambient tracks, six themes, a portal entrance, local notebook with account sync, bookmarks, and an EmulatorJS launcher for user-supplied game files. The reference site's streaming music service is not copied. Emulator engines load from EmulatorJS's CDN.
 
 ## Webports and community update
 
-- A separate **Webported Games** route (`#webports`) includes 515 launch listings, 123 curated popular picks, search, pagination, source links and the requested Geometry Dash webport pinned above the collection. It does not merge these listings into the original Games route. The upstream catalogue has 517 playable rows; duplicate URLs and repository pages used as play links are excluded, and the requested Geometry Dash URL is added.
+- A separate **Webported Games** route (`#webports`) includes 20 distinct popular games, search, pagination, source links and the requested Geometry Dash webport pinned above the collection. It does not merge these listings into the original Games route. The upstream catalogue has 517 playable rows; duplicate URLs and repository pages used as play links are excluded, and the requested Geometry Dash URL is added.
 - Chat has a searchable, paginated member sidebar. Message avatars and author names open public profiles showing joined date, current activity and equipped decorations. The public API exposes only profile fields; balances, saves, passwords and session data remain private. Activity means an authenticated request within the past 75 seconds.
 - The intro now uses an animated prism and wordmark reveal, with skip controls, theme selection, replay and reduced-motion support.
-- The domain `pixelarcade.com.au` is registered at VentraIP. The selected setup keeps source on GitHub and services on Render, with the custom domain to be connected through VentraIP DNS. Domain registration itself is not file hosting.
+- The domain `pixelarcade.com.au` is registered at VentraIP. The selected setup keeps source on GitHub and services on Render, with the HTTPS custom domain connected through VentraIP DNS. Domain registration itself is not file hosting.
 
 ## Run locally
 
