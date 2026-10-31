@@ -8,7 +8,7 @@
  if(!window.isSecureContext)throw new Error('The browser needs HTTPS, or localhost for development.');
  const {ScramjetController}=$scramjetLoadController();const controller=new ScramjetController({prefix:'/service/',files:{wasm:'/scram/scramjet.wasm.wasm',all:'/scram/scramjet.all.js',sync:'/scram/scramjet.sync.js'}});await controller.init();
  await navigator.serviceWorker.register('/sw.js',{scope:'/'});await navigator.serviceWorker.ready;
- const connection=new BareMux.BareMuxConnection('/baremux/worker.js');await connection.setTransport('/epoxy/index.mjs',[{wisp:(location.protocol==='https:'?'wss://':'ws://')+location.host+'/wisp/'+encodeURIComponent(ticket)+'/'}]);
+ const connection=new BareMux.BareMuxConnection('/baremux/worker.js');await connection.setTransport('/epoxy-adapter.mjs',[{wisp:(location.protocol==='https:'?'wss://':'ws://')+location.host+'/wisp/'+encodeURIComponent(ticket)+'/'}]);
  const frame=controller.createFrame();frame.frame.title='Proxied website';document.body.append(frame.frame);
  function go(value){let u;try{u=new URL(value);}catch{throw new Error('Enter a valid website address.');}if(!['https:','http:'].includes(u.protocol))throw new Error('Only web addresses are supported.');frame.go(u.href);}
  frame.addEventListener('urlchange',event=>parent.postMessage({type:'pixel:browser:url',url:String(event.url)},window.PORTAL_ORIGIN));
