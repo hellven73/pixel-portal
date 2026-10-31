@@ -98,7 +98,7 @@
  window.addEventListener('pixel:navigate',event=>{if(event.detail==='chat')startChat();else stopChat();if(event.detail==='market'&&user)refreshInventory().catch(error=>toast(error.message));});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&view==='chat')pollChat();});
  (async()=>{
-  try{state=await api('config');$('#backend-dot').classList.add('ready');$('#backend-dot').title='Pixel server connected';const data=await api('auth/me');user=data.user;const shopData=await api('shop');shop=shopData.items;if(user){await syncAccount();await refreshInventory();}}
+  try{state=await api('config');if(state.ephemeralStorage){const notice=textNode('div','Free preview · Accounts, chat, inventory and account saves can reset when the server restarts.','connection-notice preview-notice');$('#main').prepend(notice);}$('#backend-dot').classList.add('ready');$('#backend-dot').title='Pixel server connected';const data=await api('auth/me');user=data.user;const shopData=await api('shop');shop=shopData.items;if(user){await syncAccount();await refreshInventory();}}
   catch{$('#backend-dot').title='Pixel server not connected';}
   renderAccount();updateAI();renderMarket();updateSummary();if(view==='chat')startChat();if(!state.backend){$('#browser-status').textContent='Scramjet needs the Pixel browser server. This static host cannot run it.';$('#market-status').textContent='The marketplace needs the Pixel server. No purchases are simulated.';}
  })();

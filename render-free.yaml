@@ -28,6 +28,8 @@ services:
       - fromGroup: hellven73-pixel-access
       - key: NODE_VERSION
         value: "24"
+      - key: STORAGE_MODE
+        value: ephemeral
       - key: DB_PATH
         value: ./data/portal.sqlite
       - key: COOKIE_SECURE

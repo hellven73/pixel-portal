@@ -25,3 +25,5 @@ dialog{max-height:90svh;max-width:calc(100vw - 25px);background:var(--bg);color:
 .item-preview{position:relative}.item-overlay{position:absolute;inset:0;margin:auto;width:112px;height:112px;object-fit:contain;pointer-events:none}.item-preview:has(.item-profile.profile) .item-overlay{width:100%;height:100%;object-fit:cover;opacity:.7}.item-profile.profile{z-index:1}.avatar,.top-avatar,.message-avatar{position:relative;overflow:visible}.equipped-art{position:absolute;inset:-25%;width:150%;height:150%;object-fit:contain;pointer-events:none;z-index:2}
 
 #account-summary{position:relative;isolation:isolate;overflow:hidden;border-radius:12px;padding:15px}.profile-effect-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45;z-index:-1;pointer-events:none}
+
+.preview-notice{margin-bottom:24px;font-size:11px}

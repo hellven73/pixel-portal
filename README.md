@@ -27,7 +27,7 @@ Requires Node.js 24 or later.
 
 ## Deploy on Render
 
-`render-free.yaml` provides a free preview of both services. Its SQLite data is ephemeral: accounts, chat and inventory can reset after a restart or deployment. Free services can sleep and share free-tier usage limits. It is not the durable production configuration.
+`render-free.yaml` provides a free preview of both services. The first live preview uses https://hellven73-pixel-portal.onrender.com and an isolated browser at https://hellven73-pixel-browser.onrender.com. Its SQLite data is ephemeral: accounts, chat and inventory can reset after a restart or deployment. Free services can sleep and share free-tier usage limits. It is not the durable production configuration.
 
 `render.yaml` defines **two services** for durable deployment:
 

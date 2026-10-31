@@ -28,7 +28,7 @@ export function createBrowserServer(options={}){
  server.on('upgrade',(req,socket,head)=>{
  const url=new URL(req.url,'http://proxy.invalid');const origin=req.headers.origin;
  if(url.pathname!=='/wisp/'||!verifyTicket(url.searchParams.get('ticket'),secret)||(origin!==`https://${req.headers.host}`&&origin!==`http://${req.headers.host}`)){socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');return;}
- const expiry=JSON.parse(Buffer.from(url.searchParams.get('ticket').split('.')[0],'base64url')).exp*1000-Date.now();const timeout=setTimeout(()=>socket.end(),expiry);socket.on('close',()=>clearTimeout(timeout));wisp.routeRequest(req,socket,head);
+ const expiry=JSON.parse(Buffer.from(url.searchParams.get('ticket').split('.')[0],'base64url')).exp*1000-Date.now();const timeout=setTimeout(()=>socket.end(),expiry);socket.on('close',()=>clearTimeout(timeout));req.url='/wisp/';wisp.routeRequest(req,socket,head);
  });return server;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const server=createBrowserServer();server.listen(Number(process.env.PORT)||8081,'0.0.0.0',()=>console.log('Pixel browser service listening'));}
