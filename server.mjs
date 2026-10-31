@@ -26,39 +26,48 @@ export async function createPortal(options={}){
  CREATE TABLE IF NOT EXISTS ai_usage(user_id INTEGER NOT NULL REFERENCES users(id),day TEXT NOT NULL,count INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(user_id,day));`);
  const columns=db.prepare('PRAGMA table_info(users)').all().map(x=>x.name);if(!columns.includes('profile_effect'))db.exec('ALTER TABLE users ADD COLUMN profile_effect TEXT');if(!columns.includes('plus_until'))db.exec('ALTER TABLE users ADD COLUMN plus_until INTEGER NOT NULL DEFAULT 0');
  const statement=sql=>db.prepare(sql),now=()=>Date.now();
- const limits=new Map(),roomNames=['general','gaming','help'];
+ const activeUsers=new Map();const limits=new Map(),roomNames=['general','gaming','help'];
  let catalogue=JSON.parse(await readFile(join(root,'catalogue.json'),'utf8'));
  const config={proxyOrigin:options.proxyOrigin??process.env.PROXY_ORIGIN??(process.env.PROXY_HOSTNAME?'https://'+process.env.PROXY_HOSTNAME:''),proxySecret:options.proxySecret??process.env.PROXY_SHARED_SECRET??'',aiBase:options.aiBase??process.env.AI_BASE_URL??'',aiKey:options.aiKey??process.env.AI_API_KEY??'',aiModel:options.aiModel??process.env.AI_MODEL??'',allowLocalAI:process.env.AI_ALLOW_LOCAL==='1'};
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
- const allowedFiles=new Set(['index.html','app.js','services.js','style.css','games.js','icon.svg','catalogue.json','shop-data.json']);
+ const allowedFiles=new Set(['index.html','app.js','services.js','style.css','games.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
- const sweep=setInterval(()=>{for(const[key,v]of limits)if(now()-v.start>3600000)limits.delete(key);statement('DELETE FROM sessions WHERE expires<?').run(now());},60000);sweep.unref();
+ const sweep=setInterval(()=>{for(const[id,seen]of activeUsers)if(now()-seen>75000)activeUsers.delete(id);for(const[key,v]of limits)if(now()-v.start>3600000)limits.delete(key);statement('DELETE FROM sessions WHERE expires<?').run(now());},60000);sweep.unref();
  function userFor(req){const match=(req.headers.cookie||'').match(/(?:^|;\s*)pixel_session=([a-f0-9]{64})(?:;|$)/);if(!match)return null;return statement('SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.hash=? AND s.expires>?').get(sha(match[1]),now())||null;}
  function requireUser(req){const u=userFor(req);if(!u)fail(401,'Sign in to use this feature.');return u;}
- function csrf(req){if(['GET','HEAD','OPTIONS'].includes(req.method))return;const origin=req.headers.origin;if(!origin)fail(403,'The request needs an origin.');const expected=options.origin||process.env.APP_ORIGIN;let originHost;try{originHost=new URL(origin).host;}catch{fail(403,'Invalid request origin.');}if(expected?origin!==expected:originHost!==req.headers.host)fail(403,'This request came from a different site.');}
+ function csrf(req){if(['GET','HEAD','OPTIONS'].includes(req.method))return;const origin=req.headers.origin;if(!origin)fail(403,'The request needs an origin.');const expected=options.origin||process.env.APP_ORIGIN;const additional=options.origins||process.env.APP_ORIGINS;const allowed=additional?additional.split(',').map(value=>value.trim()).filter(Boolean):expected?[expected]:null;let originHost;try{originHost=new URL(origin).host;}catch{fail(403,'Invalid request origin.');}if(allowed?!allowed.includes(origin):originHost!==req.headers.host)fail(403,'This request came from a different site.');}
  async function body(req,max=65536){if(!(req.headers['content-type']||'').startsWith('application/json'))fail(415,'Send application/json.');let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>max)fail(413,'This request is too large.');chunks.push(chunk);}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail(400,'Invalid JSON.');}}
  function json(res,status,payload){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(payload));}
  function session(res,user,req){const token=randomBytes(32).toString('hex');statement('INSERT INTO sessions(hash,user_id,expires) VALUES(?,?,?)').run(sha(token),user.id,now()+7*86400000);const secure=process.env.COOKIE_SECURE==='1'||req.socket.encrypted;res.setHeader('Set-Cookie',`pixel_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
+ function memberProfile(row){return{id:row.id,username:row.username,frame:row.frame,badge:row.badge,nameColor:row.name_color,profileEffect:row.profile_effect,plusActive:row.plus_until>now(),joinedAt:row.created_at,online:(activeUsers.get(row.id)||0)>now()-75000};}
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
  const server=createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','credentialless');
  try{
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
  if(path.startsWith('/api/')){
-  csrf(req);limit(`all:${req.socket.remoteAddress}`,240);const u=userFor(req);
-  if(path==='/api/health'&&method==='GET')return json(res,200,{ok:true,version:'2.0.0',games:catalogue.games.length});
+  csrf(req);limit(`all:${req.socket.remoteAddress}`,240);const u=userFor(req);if(u)activeUsers.set(u.id,now());
+  if(path==='/api/health'&&method==='GET')return json(res,200,{ok:true,version:'2.1.0',games:catalogue.games.length});
   if(path==='/api/config'&&method==='GET')return json(res,200,{backend:true,chat:true,marketplace:true,ephemeralStorage:process.env.STORAGE_MODE==='ephemeral',proxy:Boolean(config.proxyOrigin&&config.proxySecret),ai:aiReady,aiModel:config.aiModel||null,rooms:roomNames});
+  if(path==='/api/users'&&method==='GET'){
+   const search=clean(url.searchParams.get('search')||'',24),after=Math.max(0,Number(url.searchParams.get('after'))||0),take=Math.min(100,Math.max(1,Number(url.searchParams.get('limit'))||50));
+   const pattern='%'+search.replaceAll('\\','\\\\').replaceAll('%','\\%').replaceAll('_','\\_')+'%';
+   const rows=statement("SELECT id,username,frame,badge,name_color,profile_effect,plus_until,created_at FROM users WHERE id>? AND username LIKE ? ESCAPE '\\' ORDER BY id LIMIT ?").all(after,pattern,take+1);
+   const profiles=rows.slice(0,take).map(memberProfile),total=statement("SELECT COUNT(*) AS n FROM users WHERE username LIKE ? ESCAPE '\\'").get(pattern).n;
+   return json(res,200,{users:profiles,total,nextCursor:rows.length>take?profiles.at(-1).id:null});
+  }
+  if(/^\/api\/users\/\d+$/.test(path)&&method==='GET'){const row=statement('SELECT id,username,frame,badge,name_color,profile_effect,plus_until,created_at FROM users WHERE id=?').get(Number(path.split('/').pop()));if(!row)fail(404,'This profile was not found.');return json(res,200,{profile:memberProfile(row)});}
   if(path==='/api/auth/me'&&method==='GET')return json(res,200,{user:publicUser(u)});
   if(path==='/api/auth/register'&&method==='POST'){
    limit(`register:${req.socket.remoteAddress}`,10,3600000);const b=await body(req);const username=clean(b.username,24);if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))fail(400,'Use 3–24 letters, numbers, or underscores for your username.');if(typeof b.password!=='string'||b.password.length<10||b.password.length>128)fail(400,'Choose a password between 10 and 128 characters.');
    if(statement('SELECT id FROM users WHERE username=?').get(username))fail(409,'That username is already taken.');const salt=randomBytes(16).toString('hex'),hash=Buffer.from(await scrypt(b.password,salt,64)).toString('hex');
    let id;try{id=statement('INSERT INTO users(username,password_hash,salt,coins,created_at) VALUES(?,?,?,2500,?)').run(username,hash,salt,now()).lastInsertRowid;}catch(e){if(String(e).includes('UNIQUE'))fail(409,'That username is already taken.');throw e;}
-   const user=statement('SELECT * FROM users WHERE id=?').get(id);session(res,user,req);return json(res,201,{user:publicUser(user)});
+   const user=statement('SELECT * FROM users WHERE id=?').get(id);activeUsers.set(user.id,now());session(res,user,req);return json(res,201,{user:publicUser(user)});
   }
   if(path==='/api/auth/login'&&method==='POST'){
-   limit(`login:${req.socket.remoteAddress}`,30,600000);const b=await body(req),username=clean(b.username,24);if(typeof b.password!=='string'||b.password.length>128)fail(400,'Enter your username and password.');const row=statement('SELECT * FROM users WHERE username=?').get(username);const salt=row?.salt||'00000000000000000000000000000000',hash=Buffer.from(await scrypt(b.password,salt,64));if(!row||!timingSafeEqual(hash,Buffer.from(row.password_hash,'hex')))fail(401,'The username or password is incorrect.');session(res,row,req);return json(res,200,{user:publicUser(row)});
+   limit(`login:${req.socket.remoteAddress}`,30,600000);const b=await body(req),username=clean(b.username,24);if(typeof b.password!=='string'||b.password.length>128)fail(400,'Enter your username and password.');const row=statement('SELECT * FROM users WHERE username=?').get(username);const salt=row?.salt||'00000000000000000000000000000000',hash=Buffer.from(await scrypt(b.password,salt,64));if(!row||!timingSafeEqual(hash,Buffer.from(row.password_hash,'hex')))fail(401,'The username or password is incorrect.');activeUsers.set(row.id,now());session(res,row,req);return json(res,200,{user:publicUser(row)});
   }
-  if(path==='/api/auth/logout'&&method==='POST'){const token=(req.headers.cookie||'').match(/pixel_session=([a-f0-9]{64})/)?.[1];if(token)statement('DELETE FROM sessions WHERE hash=?').run(sha(token));res.setHeader('Set-Cookie','pixel_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');return json(res,200,{ok:true});}
+  if(path==='/api/auth/logout'&&method==='POST'){if(u)activeUsers.delete(u.id);const token=(req.headers.cookie||'').match(/pixel_session=([a-f0-9]{64})/)?.[1];if(token)statement('DELETE FROM sessions WHERE hash=?').run(sha(token));res.setHeader('Set-Cookie','pixel_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');return json(res,200,{ok:true});}
   if(path==='/api/games'&&method==='GET')return json(res,200,catalogue);
   if(path==='/api/chat/messages'&&method==='GET'){
    requireUser(req);const room=url.searchParams.get('room')||'general';if(!roomNames.includes(room))fail(404,'Unknown channel.');const after=Number(url.searchParams.get('after'))||0;

@@ -55,13 +55,13 @@ function enter(){
  if(isEntering||$('#entrance').hidden)return;isEntering=true;$('#entrance').classList.add('entering');
  setTimeout(()=>{$('#entrance').hidden=true;$('#entrance').classList.remove('entering');$('#app').hidden=false;$('#app').classList.add('app-appear');cancelAnimationFrame(starFrame);$('#main').focus({preventScroll:true});isEntering=false;},prefersMotion()?850:0);
 }
-function replay(){stopGame();$('#game-dialog').close();$('#app').hidden=true;$('#entrance').hidden=false;$('#entrance').classList.remove('entering');starfield();$('#enter').focus({preventScroll:true});window.scrollTo(0,0);}
+function replay(){stopGame();$('#game-dialog').close();$('#app').hidden=true;$('#entrance').hidden=false;$('#entrance').classList.remove('entering');$('#entrance').classList.remove('boot-active');void $('#entrance').offsetWidth;$('#entrance').classList.add('boot-active');starfield();$('#enter').focus({preventScroll:true});window.scrollTo(0,0);}
 $('#enter').onclick=enter;$('#skip-intro').onclick=enter;$('#replay').onclick=replay;$('#replay-home').onclick=replay;
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#entrance').hidden&&!['BUTTON','A','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();enter();}});
 window.addEventListener('resize',()=>{if(!$('#entrance').hidden)starfield();});
 $('#reduce-motion').onchange=e=>{reduced=e.target.checked;storage.set('reduced',reduced);document.documentElement.classList.toggle('reduce-motion',reduced);if(!$('#entrance').hidden)starfield();};
 $('#show-entrance').checked=storage.get('showEntrance',true);$('#show-entrance').onchange=e=>storage.set('showEntrance',e.target.checked);
-let view='home';const titles={home:'Home',games:'Arcade',browse:'Browser',music:'Music',notes:'Notebook',themes:'Appearance',chat:'Chat',ai:'Assistant',market:'Marketplace',emulator:'Emulator'};
+let view='home';const titles={home:'Home',games:'Games',webports:'Webported Games',browse:'Browser',music:'Music',notes:'Notebook',themes:'Appearance',chat:'Chat',ai:'Assistant',market:'Marketplace',emulator:'Emulator'};
 function setView(next,updateHash=true){
  if(!Object.hasOwn(titles,next))next='home';view=next;
  $$('[data-page]').forEach(s=>s.hidden=s.dataset.page!==view);$$('nav [data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);if(b.dataset.view===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
@@ -141,4 +141,4 @@ $('#audio-upload').onchange=e=>{const file=e.target.files[0];if(!file)return;if(
 localAudio.addEventListener('error',()=>toast('This audio format is not supported by your browser.'));
 for(let i=0;i<40;i++){const bar=document.createElement('i');bar.style.height=`${4+Math.abs(Math.sin(i*.9)*Math.cos(i*.3))*20}px`;$('.equalizer')?.append(bar);}
 updateAudioUI();
-if(!$('#show-entrance').checked){$('#entrance').hidden=true;$('#app').hidden=false;}else starfield();
+if(!$('#show-entrance').checked){$('#entrance').hidden=true;$('#app').hidden=false;}else {$('#entrance').classList.add('boot-active');starfield();}

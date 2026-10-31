@@ -7,3 +7,5 @@ The game catalogue snapshot contains publicly served titles, source identifiers,
 The isolated browser uses Mercury Workshop's open-source Scramjet 1.1.0, Bare-Mux 2.1.9, Epoxy Transport 3.0.2, Libcurl Transport 1.5.2 and Wisp-JS 0.4.1. Their code and licenses are installed as npm dependencies. Scramjet is MIT-licensed; Wisp-JS and Libcurl Transport are AGPL-3.0-licensed. Consult each package's LICENSE for its exact terms. The service-worker integration follows Scramjet's documented public APIs.
 
 The Pixel Portal application source is provided under AGPL-3.0; see LICENSE. Original CSS illustrations, UI and game engines from the first Pixel Portal version are retained where applicable.
+
+The separate webport collection contains public launch and source links from Carter54git’s Ultimate Catalog of Web Game Ports (https://github.com/Carter54git/Ultimate-Catalog-Of-Web-Game-Ports), retrieved 31 October 2026. Popular picks are an editorial selection, not a measured popularity ranking. Referenced ports remain on their third-party hosts and retain their owners’ rights. No original game data is bundled.

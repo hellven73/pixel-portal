@@ -1,6 +1,6 @@
 {
   "name": "pixel-portal",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.mjs",
     "dev": "node dev.mjs",
-    "check": "node --check server.mjs && node --check proxy.mjs && node --check browser.js && node --check app.js && node --check services.js && node --check sw.js",
+    "check": "node --check server.mjs && node --check proxy.mjs && node --check browser.js && node --check app.js && node --check services.js && node --check sw.js && node --check community.js && node --check epoxy-adapter.mjs",
     "test": "node --test server.test.mjs",
     "start:browser": "node --env-file-if-exists=.env proxy.mjs"
   },

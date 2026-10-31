@@ -26,3 +26,22 @@ test('ticket path reaches the Wisp protocol; missing tickets are rejected', {tim
  const [packet]=await once(socket,'message');assert.equal(packet[0],3,'Wisp must send the initial CONTINUE packet instead of routing to WSProxy');
  socket.close();await once(socket,'close');
 });
+
+test('public member directory paginates and profiles never expose account secrets',async t=>{
+ const h=await harness();t.after(()=>h.app.close());const a=await h.register('public_alpha'),b=await h.register('public_beta'),c=await h.register('other_member');
+ const page1=await h.request('/api/users?limit=2');assert.equal(page1.status,200);assert.equal(page1.body.total,3);assert.equal(page1.body.users.length,2);assert.equal(page1.body.nextCursor,b.body.user.id);
+ const page2=await h.request('/api/users?limit=2&after='+page1.body.nextCursor);assert.deepEqual(page2.body.users.map(p=>p.username),['other_member']);assert.equal(page2.body.nextCursor,null);
+ const search=await h.request('/api/users?search=public_');assert.equal(search.body.total,2);assert.deepEqual(search.body.users.map(p=>p.username),['public_alpha','public_beta']);assert.equal((await h.request('/api/users?search=%25')).body.total,0);
+ await h.request('/api/shop/buy',{method:'POST',cookie:a.cookie,data:{itemId:'deco_foxtail'}});await h.request('/api/shop/equip',{method:'POST',cookie:a.cookie,data:{itemId:'deco_foxtail'}});
+ const profile=(await h.request('/api/users/'+a.body.user.id)).body.profile;assert.equal(profile.frame,'deco_foxtail');assert.equal(profile.online,true);assert.equal(typeof profile.joinedAt,'number');
+ for(const value of [...page1.body.users,profile]){assert.deepEqual(Object.keys(value).sort(),['id','username','frame','badge','nameColor','profileEffect','plusActive','joinedAt','online'].sort());}
+ assert.equal((await h.request('/api/users/999999')).status,404);await h.request('/api/auth/logout',{method:'POST',cookie:a.cookie,data:{}});assert.equal((await h.request('/api/users/'+a.body.user.id)).body.profile.online,false);
+ const ports=await fetch(h.base+'/webports.json');assert.equal(ports.status,200);const games=(await ports.json()).games;assert.ok(games.length>500);assert.equal(games[0].url,'https://gd-webport.pages.dev/');assert.ok(games.some(p=>p.name==='Hollow Knight'));assert.ok(games.some(p=>p.name==='Undertale'));assert.ok(games.every(p=>/^https?:\/\//.test(p.url)));assert.equal((await fetch(h.base+'/community.js')).status,200);
+});
+
+test('custom-domain origin allowlist permits the owned hosts and rejects other sites',async t=>{
+ const h=await harness({origins:'https://pixelarcade.com.au,https://www.pixelarcade.com.au,https://hellven73-pixel-portal.onrender.com'});t.after(()=>h.app.close());
+ const account=await h.request('/api/auth/register',{method:'POST',origin:'https://pixelarcade.com.au',data:{username:'domain_member',password:'Temporary-domain-pass-7264!'}});assert.equal(account.status,201);
+ assert.equal((await h.request('/api/wallet/daily',{method:'POST',cookie:account.cookie,origin:'https://www.pixelarcade.com.au',data:{}})).status,200);
+ assert.equal((await h.request('/api/chat/messages',{method:'POST',cookie:account.cookie,origin:'https://unrelated.invalid',data:{body:'must not be sent'}})).status,403);
+});

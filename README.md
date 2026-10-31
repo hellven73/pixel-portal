@@ -12,6 +12,13 @@ An independent rebuild of the public features at the reference site. This reposi
 - **AI:** a server-side OpenAI-compatible provider adapter, conversation UI, per-account limits and explicit disconnected status. No model or paid AI account is supplied. Without provider configuration, AI remains unavailable; no canned replies are substituted.
 - **Other:** local-file music playback, three procedural ambient tracks, six themes, a portal entrance, local notebook with account sync, bookmarks, and an EmulatorJS launcher for user-supplied game files. The reference site's streaming music service is not copied. Emulator engines load from EmulatorJS's CDN.
 
+## Webports and community update
+
+- A separate **Webported Games** route (`#webports`) includes 515 launch listings, 123 curated popular picks, search, pagination, source links and the requested Geometry Dash webport pinned above the collection. It does not merge these listings into the original Games route. The upstream catalogue has 517 playable rows; duplicate URLs and repository pages used as play links are excluded, and the requested Geometry Dash URL is added.
+- Chat has a searchable, paginated member sidebar. Message avatars and author names open public profiles showing joined date, current activity and equipped decorations. The public API exposes only profile fields; balances, saves, passwords and session data remain private. Activity means an authenticated request within the past 75 seconds.
+- The intro now uses an animated prism and wordmark reveal, with skip controls, theme selection, replay and reduced-motion support.
+- The domain `pixelarcade.com.au` is registered at VentraIP. The selected setup keeps source on GitHub and services on Render, with the custom domain to be connected through VentraIP DNS. Domain registration itself is not file hosting.
+
 ## Run locally
 
 Requires Node.js 24 or later.
