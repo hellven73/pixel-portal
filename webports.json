@@ -45,22 +45,6 @@
       "featured": true
     },
     {
-      "id": "port-bf61d5522cae",
-      "name": "Deltarune Chapters 3 & 4",
-      "url": "https://aukak.itch.io/deltarune",
-      "sourceUrl": null,
-      "host": "aukak.itch.io",
-      "featured": true
-    },
-    {
-      "id": "port-df01477c4f35",
-      "name": "Doom",
-      "url": "https://raz0red.github.io/webprboom/",
-      "sourceUrl": "https://github.com/midzer/chocolate-doom",
-      "host": "raz0red.github.io",
-      "featured": true
-    },
-    {
       "id": "port-e9234a46a8ab",
       "name": "Plants vs. Zombies",
       "url": "https://rgc.zone/ports/pvzweb/index.html",
@@ -125,14 +109,6 @@
       "featured": true
     },
     {
-      "id": "port-21518d0cf0d8",
-      "name": "Half-Life / Counter-Strike",
-      "url": "https://x8bitrain.github.io/webXash/",
-      "sourceUrl": "https://github.com/x8bitrain/webXash",
-      "host": "x8bitrain.github.io",
-      "featured": true
-    },
-    {
       "id": "port-baeccf5829a6",
       "name": "RollerCoaster Tycoon 2",
       "url": "https://rgc.zone/ports/openrct2/index.html",
@@ -149,14 +125,6 @@
       "featured": true
     },
     {
-      "id": "port-24c4eda0c2a2",
-      "name": "Spelunky Classic HD",
-      "url": "https://yancharkin.itch.io/spelunky-classic-hd",
-      "sourceUrl": null,
-      "host": "yancharkin.itch.io",
-      "featured": true
-    },
-    {
       "id": "port-1b628ba93675",
       "name": "Duke Nukem 3D",
       "url": "https://midzer.de/wasm/duke3d/",
@@ -165,5 +133,5 @@
       "featured": true
     }
   ],
-  "selection": "20 distinct popular games, one port per title"
+  "selection": "Distinct direct game embeds; provider landing pages removed."
 }

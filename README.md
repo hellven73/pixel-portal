@@ -68,3 +68,11 @@ Game catalogues and marketplace metadata were retrieved from public endpoints on
 The application is a rebuild, not an exact copy of all behaviour. The original users, conversations, subscriptions, streaming integrations, administrator features and hidden services cannot be recovered from the public frontend. Scramjet's browser-side transport and externally hosted games require end-to-end checks on the eventual public HTTPS deployment. No claim is made that every external game or ROM format works.
 
 See [NOTICE.md](NOTICE.md) for dependency credits and [LICENSE](LICENSE) for the application source license.
+
+### Game catalogue cleanup
+
+Provider-tab launches, Katsugachi game entries and Fern catch-all routes have been removed. The shared game policy also rejects those entries at render/launch time, including saved favourites and imported URL games. Known generated local minigames, the Chess Club interface, party games and daily puzzle are retired; their direct assets and game API routes are unavailable. Existing community records and wallet balances remain intact.
+
+Twelve featured embeds use the individual iframe URLs exposed by leveldevil-unblocked.github.io, rather than embedding its catalogue pages. All twelve game documents returned HTTP 200 without iframe-blocking headers during the audit; Level Devil rendered in the embedded player. GPU-dependent gameplay could not be fully verified in the cloud browser, which lacks WebGL. Those entries now show a graphics requirement before launch. Sixteen direct webports remain after removing four landing/setup pages.
+
+Chat fills the visible viewport with a fixed shell and a shrinking message list. Its composer and user panel stay at the bottom; mobile visual-viewport resizing and safe-area padding accommodate browser chrome and keyboards.

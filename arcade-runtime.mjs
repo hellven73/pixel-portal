@@ -20,7 +20,7 @@ async function prepare(){
   await mkdir(runtime,{recursive:true});await exec('tar',['-xzf',archive,'-C',runtime,'--no-same-owner']);
  }
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
- return{directory,worker,files:new Set(manifest.files.filter(name=>!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
+ return{directory,worker,files:new Set(manifest.files.filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
 }
 export async function createArcade({dbPath,legacyDb,adminUsername=process.env.PIXEL_ADMIN_USERNAME||'',...extra}={}){
  const source=await prepareArcade();

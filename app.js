@@ -73,16 +73,7 @@ $('#theme-shortcut').onclick=()=>setView('themes');
 window.addEventListener('hashchange',()=>setView(location.hash.slice(1),false));setView(location.hash.slice(1)||'home',false);
 function clock(){const now=new Date();$('#clock').textContent=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('#today').textContent=now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'}).toUpperCase();const hour=now.getHours();$('#greeting').textContent=hour<12?'A fresh day. A whole internet of possibilities.':hour<18?'Your afternoon, with a little more possibility.':'A little escape for your evening.';}clock();setInterval(clock,30000);
 // Game catalogue: all games are included locally.
-const games=[
-{id:'2048',name:'2048',category:'puzzle',label:'PUZZLE · MERGE & REPEAT',bg:'#2b253f',fg:'#c4b1ed',art:'<span class="art-num">2048</span>'},
-{id:'snake',name:'Neon Snake',category:'quick',label:'CLASSIC · KEEP GROWING',bg:'#1d302a',fg:'#a2dcb6',art:'<span class="art-snake">'+ '<i></i>'.repeat(7)+'</span>'},
-{id:'breakout',name:'Brick Breaker',category:'quick',label:'ARCADE · BREAK THE PATTERN',bg:'#332221',fg:'#dca58f',art:'<span class="art-break">'+'<i></i>'.repeat(15)+'</span>'},
-{id:'memory',name:'Match Point',category:'puzzle',label:'MEMORY · FIND YOUR MATCH',bg:'#1c2d39',fg:'#9bbfd7',art:'<span class="art-memory"><i>✦</i><i>✦</i></span>'},
-{id:'tic',name:'Noughts & Crosses',category:'puzzle',label:'TWO PLAYERS · YOUR MOVE',bg:'#302739',fg:'#d6b2dd',art:'<span class="art-tic">×○</span>'},
-{id:'reaction',name:'Reflex',category:'quick',label:'QUICK PLAY · IN A HEARTBEAT',bg:'#34301b',fg:'#e0d28f',art:'<span class="art-reaction">ϟ</span>'},
-{id:'mines',name:'Minefield',category:'puzzle',label:'PUZZLE · WATCH YOUR STEP',bg:'#202c34',fg:'#a5c0d1',art:'<span class="art-mines">✹</span>'},
-{id:'pong',name:'Pocket Pong',category:'quick',label:'ARCADE · KEEP IT IN PLAY',bg:'#2b2b37',fg:'#bbb8e6',art:'<span class="art-pong">┃•┃</span>'}
-];
+const games=[];
 let favorites=storage.get('favorites',[]);if(!Array.isArray(favorites))favorites=[];let filter='all';
 function gameCard(game){
  const card=document.createElement('article');card.className='game-card';
@@ -96,7 +87,7 @@ function renderGames(){
 $$('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;$$('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));renderGames();});$('#game-search').oninput=renderGames;renderGames();
 let gameCleanup=()=>{},currentGame=null;
 function stopGame(){gameCleanup();gameCleanup=()=>{};}
-function openGame(game){stopGame();currentGame=game;$('#game-title').textContent=game.name;$('#game-mount').replaceChildren();$('#game-dialog').showModal();gameCleanup=PixelGames[game.id]($('#game-mount'),storage)||(()=>{});}
+function openGame(game){toast('This game has been removed. Browse the embedded collection instead.');}
 $('#restart-game').onclick=()=>{if(currentGame){stopGame();$('#game-mount').replaceChildren();gameCleanup=PixelGames[currentGame.id]($('#game-mount'),storage)||(()=>{});}};
 $('#close-game').onclick=()=>$('#game-dialog').close();$('#game-dialog').addEventListener('close',stopGame);$('#game-dialog').addEventListener('click',e=>{if(e.target===e.currentTarget){const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.currentTarget.close();}});
 // Search and bookmarks. Protocols are deliberately limited to web addresses.

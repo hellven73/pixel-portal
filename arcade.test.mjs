@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,readFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createPortal} from './server.mjs';
@@ -62,17 +62,12 @@ test('market batches roll back purchases and gifts; audited admin grant replay i
  assert.equal((await h.request('marketplace',{cookie:a.cookie,data:{action:'gift',username:'buyer_b',amount:10000,requestId:crypto.randomUUID()}})).status,409);
  assert.equal((await h.request('marketplace',{cookie:a.cookie})).data.coins,balance);
 });
-test('multiplayer validates turns, versions, outsiders and daily challenge scores',async t=>{
- const h=await harness(t),a=await h.register('player_a'),b=await h.register('player_b'),c=await h.register('player_c');
- const created=await h.request('party',{cookie:a.cookie,data:{action:'create',game:'ttt'}});assert.equal(created.status,201);const code=created.data.code;
- assert.equal((await h.request('party',{cookie:b.cookie,data:{action:'join',code}})).status,200);
- assert.equal((await h.request('party?code='+code,{cookie:c.cookie})).status,403);
- let room=(await h.request('party?code='+code,{cookie:a.cookie})).data;
- assert.equal((await h.request('party',{cookie:b.cookie,data:{action:'move',code,version:room.version,move:{cell:0}}})).status,400);
- assert.equal((await h.request('party',{cookie:a.cookie,data:{action:'move',code,version:room.version,move:{cell:0}}})).status,200);
- assert.equal((await h.request('party',{cookie:b.cookie,data:{action:'move',code,version:room.version,move:{cell:1}}})).status,409);
- const challenge=(await h.request('challenges')).data;assert.equal(challenge.board.length,25);assert.equal(challenge.timeZone,'Australia/Sydney');
- assert.notEqual((await h.request('challenges',{cookie:a.cookie,data:{day:challenge.day,moves:[],points:999999}})).status,200);
+test('retired generated games cannot be reached through APIs or direct asset URLs',async t=>{
+ const h=await harness(t);
+ for(const path of ['party','challenges'])assert.equal((await h.request(path)).status,410);
+ for(const file of ['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'])assert.equal((await fetch(h.base+'/arcade/'+file)).status,404,file);
+ assert.equal((await fetch(h.base+'/games.js')).status,404);
+ assert.equal((await fetch(h.base+'/arcade/slope.html')).status,200);
 });
 test('recovery is one-use and revokes sessions; static backend files remain private',async t=>{
  const h=await harness(t),a=await h.register('recovery_a');
@@ -92,4 +87,12 @@ test('existing Portal accounts migrate once with working passwords and balances'
  const login=await fetch(base+'/arcade-api/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username:'Existing_Player',password:'Existing-passphrase-456!'})});assert.equal(login.status,200,await login.text());
  assert.equal(app.arcade.db.prepare('SELECT coins FROM market_wallets WHERE user_id=?').get('portal:1').coins,2500);await app.close();
  app=await createPortal({dbPath});assert.equal(app.arcade.db.prepare('SELECT COUNT(*) AS n FROM arcade_accounts').get().n,1);assert.equal(app.arcade.db.prepare('SELECT coins FROM market_wallets WHERE user_id=?').get('portal:1').coins,2500);await app.close();
+});
+
+test('catalogues reject provider redirects and removed minigames while retaining real embeds',async()=>{
+ const {runInNewContext}=await import('node:vm');const context={URL};runInNewContext(await readFile(new URL('./game-policy.js',import.meta.url),'utf8'),context);const allowed=context.pixelGameAllowed;
+ for(const g of [{id:'reversi',embed:'./table-games.html?game=reversi'},{id:'custom-1',embed:'https://katsugachi.github.io/Solus-MS/'},{id:'x',embed:'https://eiym.org/gn-math/1.html'},{id:'x',embed:'https://example.com/game',providerLaunch:true},{id:'x',embed:'https://example.com/game',isolatedLaunch:true}])assert.equal(allowed(g),false,JSON.stringify(g));
+ const catalogue=JSON.parse(await readFile(new URL('./catalogue.json',import.meta.url)));assert.ok(catalogue.games.every(allowed));const featured=catalogue.games.filter(g=>g.source==='Featured embeds');assert.equal(featured.length,12);assert.equal(new Set(featured.map(g=>g.url)).size,12);assert.ok(featured.every(g=>g.inlineOnly&&new URL(g.url).hostname==='10minutestilldawnonline.github.io'));
+ const {prepareArcade}=await import('./arcade-runtime.mjs');const app=await prepareArcade();const originals=JSON.parse(await readFile(join(app.directory,'originals.json'),'utf8'));assert.deepEqual(originals.map(g=>g.name),['Slope']);assert.ok(originals.every(allowed));
+ const ports=JSON.parse(await readFile(new URL('./webports.json',import.meta.url)));assert.ok(ports.games.every(allowed));assert.equal(allowed({id:'slope',embed:'./slope.html'}),true);
 });

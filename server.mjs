@@ -32,7 +32,7 @@ export async function createPortal(options={}){
  const config={proxyOrigin:options.proxyOrigin??process.env.PROXY_ORIGIN??(process.env.PROXY_HOSTNAME?'https://'+process.env.PROXY_HOSTNAME:''),proxySecret:options.proxySecret??process.env.PROXY_SHARED_SECRET??'',aiBase:options.aiBase??process.env.AI_BASE_URL??'',aiKey:options.aiKey??process.env.AI_API_KEY??'',aiModel:options.aiModel??process.env.AI_MODEL??'',allowLocalAI:process.env.AI_ALLOW_LOCAL==='1'};
  const arcade=await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,adminUsername:options.adminUsername});
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
- const allowedFiles=new Set(['index.html','app.js','services.js','style.css','games.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js']);
+ const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
  const sweep=setInterval(()=>{for(const[id,seen]of activeUsers)if(now()-seen>75000)activeUsers.delete(id);for(const[key,v]of limits)if(now()-v.start>3600000)limits.delete(key);statement('DELETE FROM sessions WHERE expires<?').run(now());},60000);sweep.unref();
  function userFor(req){const match=(req.headers.cookie||'').match(/(?:^|;\s*)pixel_session=([a-f0-9]{64})(?:;|$)/);if(!match)return null;return statement('SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.hash=? AND s.expires>?').get(sha(match[1]),now())||null;}
@@ -48,6 +48,7 @@ export async function createPortal(options={}){
  try{
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
  if(path.startsWith('/arcade-api/')){
+  if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
   if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:process.env.STORAGE_MODE==='ephemeral',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
   csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
   for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
