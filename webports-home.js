@@ -5,7 +5,7 @@
 const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
 const sidebar=document.querySelector('#side-nav'),main=document.querySelector('main');
 if(!sidebar||!main||typeof showSection!=='function')return;
-let ports=[],query='',featuredOnly=false,loaded=false;
+let ports=[],query='',featuredOnly=false,loaded=false,activePort=null;
 const button=make('button','side-link','');
 button.dataset.section='webports';
 const icon=make('span','','🚀'),label=document.createTextNode('Webported Games '),count=make('small','','…');
@@ -43,20 +43,22 @@ showSection=function(next){
 button.onclick=()=>showSection('webports');
 function render(){
  const matches=ports.filter(p=>p.name.toLowerCase().includes(query)&&(!featuredOnly||p.featured));
- info.textContent=matches.length+' of '+ports.length+' webports available · Hosted by independent creators';
+ info.textContent=matches.length+' of '+ports.length+' webported games';
  grid.replaceChildren();
  for(const port of matches){
   const card=make('article','px-webports-card');
   const art=make('div','px-webports-art');
   art.append(make('span','','🎮'),make('small','','WEB PORT'));
   const body=make('div','px-webports-details');
-  body.append(make('h3','',port.name),make('p','',port.host));
+  body.append(make('h3','',port.name));
   if(port.requirements)body.append(make('small','px-webports-requirements',port.requirements));
   const actions=make('div','px-webports-actions');
   const play=make('button','px-webports-play','▶ Play');play.type='button';
-  play.onclick=()=>openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:true,help:port.requirements||'Web port hosted externally. Click inside the game for controls.'},true);
+  play.onclick=()=>{
+   activePort=port.id;
+   openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:true,help:port.requirements||'Click inside the game for controls.'},true);
+  };
   actions.append(play);
-  if(port.sourceUrl){const source=make('small','px-webports-source','Community port hosted by '+port.host);actions.append(source)}
   body.append(actions);card.append(art,body);grid.append(card);
  }
  if(!matches.length)grid.append(make('p','px-webports-empty','No matching webports. Try a different search.'));
@@ -76,6 +78,40 @@ async function load(){
   grid.replaceChildren();
   const reload=make('button','px-webports-play','Retry loading');reload.onclick=()=>void load();grid.append(reload);
  }
+}
+
+const gameDialog=document.querySelector('#player'),fullButton=document.querySelector('#fullscreen');
+function closeTheater(){
+ if(!gameDialog)return;
+ gameDialog.classList.remove('px-webport-theater');
+ if(fullButton){fullButton.textContent='⛶ Fullscreen';fullButton.title='Expand game';}
+}
+if(gameDialog&&fullButton){
+ // Capture before the original game's onclick, so it doesn't invoke requestFullscreen.
+ fullButton.addEventListener('click',event=>{
+  if(!activePort)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const theater=gameDialog.classList.toggle('px-webport-theater');
+  fullButton.textContent=theater?'⤢ Restore':'⛶ Fullscreen';
+  fullButton.title=theater?'Restore normal size':'Expand game within Pixel Arcade';
+ },true);
+ gameDialog.addEventListener('cancel',event=>{
+  if(!gameDialog.classList.contains('px-webport-theater'))return;
+  event.preventDefault();closeTheater();
+ });
+ gameDialog.addEventListener('close',()=>{closeTheater();activePort=null});
+}
+const resumeGame=window.pixelResumePendingGame;
+if(typeof resumeGame==='function'){
+ window.pixelResumePendingGame=function(){
+  const pending=window.pixelPendingGameId;
+  const port=ports.find(p=>p.id===pending);
+  if(!port)return resumeGame();
+  window.pixelPendingGameId='';
+  activePort=pending;
+  openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:true,help:port.requirements||'Click inside the game for controls.'},true);
+  return true;
+ };
 }
 search.addEventListener('input',()=>{query=search.value.trim().toLowerCase();render()});
 filter.onclick=()=>{featuredOnly=!featuredOnly;filter.setAttribute('aria-pressed',String(featuredOnly));filter.classList.toggle('selected',featuredOnly);render()};
