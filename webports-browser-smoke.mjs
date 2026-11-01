@@ -26,7 +26,7 @@ try {
   section:document.body.dataset.section,
   visible:!document.querySelector('#px-webports-page')?.hidden,
   count:document.querySelectorAll('#px-webports-page .px-webports-card').length,
-  nav:!!document.querySelector('#side-nav [data-section="webports"]'),
+  emojiDuplicate:!!document.querySelector('#side-nav .px-webports-nav-icon'),
   names:[...document.querySelectorAll('#px-webports-page h3')].map(n=>n.textContent)
  }));
  const navButtons=await page.locator('#side-nav button').evaluateAll(items=>items.map(e=>({label:e.textContent.trim(),dataset:e.dataset.section,html:e.outerHTML.slice(0,280)})).filter(v=>/webport/i.test(v.label)));
@@ -39,7 +39,7 @@ try {
  assert.equal(new URL(result.base).pathname,'/arcade/');
  assert.equal(result.section,'webports');
  assert.equal(result.visible,true);
- assert.equal(result.nav,true);
+ assert.equal(result.emojiDuplicate,false);
  assert.equal(result.count,18);
  assert.ok(result.names.includes('Kerbal Space Program'));
  assert.ok(result.names.includes('Plague Inc: Evolved'));
