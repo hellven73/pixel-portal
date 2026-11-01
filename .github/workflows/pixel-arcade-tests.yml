@@ -18,4 +18,5 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run check
       - run: node --test persistence.test.mjs
+      - run: node --test --test-name-pattern='homepage exposes embedded Webported Games' server.test.mjs
       - run: npm test
