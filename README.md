@@ -8,22 +8,6 @@ Live at https://pixelarcade.com.au/. The earlier Portal remains at `/portal`. Ad
 
 An independent rebuild of the public features at the reference site. This repository does **not** contain that site's original server source, accounts, messages, balances, or private data.
 
-## What is implemented
-
-- **Games:** 4,440 catalogue entries from GMShelf, Fruit, GN Math, Seraph and Truffled, with search, source filters, pagination, favourites and embedded launchers. Game files and artwork remain on their existing external hosts. Some upstream paths are broken; catalogue membership does not guarantee a working game. The eight original offline games remain as an optional collection.
-- **Browser:** real Scramjet 1.1.0, Bare-Mux, Epoxy Transport and Wisp-JS, served on a separate origin. Signed ten-minute tickets require a Pixel account before opening Wisp. Private-network and loopback destinations are blocked. Only destination ports 80/443 are enabled.
-- **Accounts:** username/password registration and login, scrypt password hashes, expiring HTTP-only sessions and account save records.
-- **Chat:** actual shared text channels with saved messages and deletion of your own messages. Voice calls and federation with the reference site's users are not implemented. DMs are available in the primary Arcade app.
-- **Marketplace:** 107 public reference listings (renamed where they include the old branding), real virtual-coin debits, duplicate-purchase protection, inventory, equipment, daily claims and local membership-pass expiry. Asset links remain external. These items do not grant benefits on the original site. New accounts start with 2,500 virtual coins; there are no real-money transactions.
-- **AI:** a server-side OpenAI-compatible provider adapter, conversation UI, per-account limits and explicit disconnected status. No model or paid AI account is supplied. Without provider configuration, AI remains unavailable; no canned replies are substituted.
-- **Other:** local-file music playback, three procedural ambient tracks, six themes, a portal entrance, local notebook with account sync, bookmarks, and an EmulatorJS launcher for user-supplied game files. The reference site's streaming music service is not copied. Emulator engines load from EmulatorJS's CDN.
-
-## Webports and community update
-
-- A separate **Webported Games** route (`#webports`) includes 20 distinct popular games, search, pagination, source links and the requested Geometry Dash webport pinned above the collection. It does not merge these listings into the original Games route. The upstream catalogue has 517 playable rows; duplicate URLs and repository pages used as play links are excluded, and the requested Geometry Dash URL is added.
-- Chat has a searchable, paginated member sidebar. Message avatars and author names open public profiles showing joined date, current activity and equipped decorations. The public API exposes only profile fields; balances, saves, passwords and session data remain private. Activity means an authenticated request within the past 75 seconds.
-- The intro now uses an animated prism and wordmark reveal, with skip controls, theme selection, replay and reduced-motion support.
-- The domain `pixelarcade.com.au` is registered at VentraIP. The selected setup keeps source on GitHub and services on Render, with the HTTPS custom domain connected through VentraIP DNS. Domain registration itself is not file hosting.
 
 ## Run locally
 
@@ -71,9 +55,6 @@ See [NOTICE.md](NOTICE.md) for dependency credits and [LICENSE](LICENSE) for the
 
 ### Game catalogue cleanup
 
-Provider-tab launches, Katsugachi game entries and Fern catch-all routes have been removed. The shared game policy also rejects those entries at render/launch time, including saved favourites and imported URL games. Known generated local minigames, the Chess Club interface, party games and daily puzzle are retired; their direct assets and game API routes are unavailable. Existing community records and wallet balances remain intact.
-
-Twelve featured embeds use the individual iframe URLs exposed by leveldevil-unblocked.github.io, rather than embedding its catalogue pages. All twelve game documents returned HTTP 200 without iframe-blocking headers during the audit; Level Devil rendered in the embedded player. GPU-dependent gameplay could not be fully verified in the cloud browser, which lacks WebGL. Those entries now show a graphics requirement before launch. Sixteen direct webports remain after removing four landing/setup pages.
 
 Chat fills the visible viewport with a fixed shell and a shrinking message list. Its composer and user panel stay at the bottom; mobile visual-viewport resizing and safe-area padding accommodate browser chrome and keyboards.
 
