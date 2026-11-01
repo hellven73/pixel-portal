@@ -7,6 +7,7 @@ import {dirname,extname,join} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createArcade,prepareArcade} from './arcade-runtime.mjs';
 import {remoteArcade} from './remote-arcade.mjs';
+import {openCloudSnapshots} from './cloud-snapshots.mjs';
 const scrypt=promisify(scryptCb),root=dirname(fileURLToPath(import.meta.url));
 export const products=JSON.parse(await readFile(join(root,'shop-data.json'),'utf8'));
 class HttpError extends Error{constructor(status,message){super(message);this.status=status;}}
@@ -15,9 +16,12 @@ const sha=x=>createHash('sha256').update(x).digest('hex');
 const clean=(v,max=1000)=>typeof v==='string'?v.trim().slice(0,max):'';
 const publicUser=row=>row?{id:row.id,username:row.username,coins:row.coins,frame:row.frame,badge:row.badge,nameColor:row.name_color,profileEffect:row.profile_effect||null,plusUntil:row.plus_until||0}:null;
 export async function createPortal(options={}){
- const dbPath=options.dbPath||process.env.DB_PATH||join(root,'data','portal.sqlite');
+ const cloud=options.cloudSnapshots||(process.env.DATABASE_URL?await openCloudSnapshots(process.env.DATABASE_URL):null);
+ const dbPath=cloud?':memory:':options.dbPath||process.env.DB_PATH||join(root,'data','portal.sqlite');
  if(dbPath!==':memory:')await mkdir(dirname(dbPath),{recursive:true});
- const db=new DatabaseSync(dbPath);db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+ const db=new DatabaseSync(dbPath);
+ if(cloud?.snapshots?.portal)db.deserialize(cloud.snapshots.portal);
+ db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
  CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY,username TEXT NOT NULL COLLATE NOCASE UNIQUE,password_hash TEXT NOT NULL,salt TEXT NOT NULL,coins INTEGER NOT NULL DEFAULT 2500 CHECK(coins>=0),frame TEXT,badge TEXT,name_color TEXT,created_at INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY,room TEXT NOT NULL,user_id INTEGER NOT NULL REFERENCES users(id),body TEXT NOT NULL,created_at INTEGER NOT NULL);
@@ -32,7 +36,8 @@ export async function createPortal(options={}){
  let catalogue=JSON.parse(await readFile(join(root,'catalogue.json'),'utf8'));
  const config={proxyOrigin:options.proxyOrigin??process.env.PROXY_ORIGIN??(process.env.PROXY_HOSTNAME?'https://'+process.env.PROXY_HOSTNAME:''),proxySecret:options.proxySecret??process.env.PROXY_SHARED_SECRET??'',aiBase:options.aiBase??process.env.AI_BASE_URL??'',aiKey:options.aiKey??process.env.AI_API_KEY??'',aiModel:options.aiModel??process.env.AI_MODEL??'',allowLocalAI:process.env.AI_ALLOW_LOCAL==='1'};
  const arcadeApiOrigin=options.arcadeApiOrigin??process.env.ARCADE_API_ORIGIN;
- const arcade=arcadeApiOrigin?{...await prepareArcade(),fetch:remoteArcade({origin:arcadeApiOrigin,fetcher:options.arcadeFetch,serviceAuthorization:options.arcadeServiceAuthorization??process.env.ARCADE_SERVICE_AUTHORIZATION}),close:()=>{}}:await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,adminUsername:options.adminUsername});
+ const arcade=arcadeApiOrigin?{...await prepareArcade(),fetch:remoteArcade({origin:arcadeApiOrigin,fetcher:options.arcadeFetch,serviceAuthorization:options.arcadeServiceAuthorization??process.env.ARCADE_SERVICE_AUTHORIZATION}),close:()=>{}}:await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,restoreSnapshot:cloud?.snapshots?.arcade,adminUsername:options.adminUsername});
+ if(cloud)await cloud.flushIfChanged(db,arcade.db);
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
  const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js','loading-screen.css','loading-screen.js']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
@@ -46,6 +51,24 @@ export async function createPortal(options={}){
  function memberProfile(row){return{id:row.id,username:row.username,frame:row.frame,badge:row.badge,nameColor:row.name_color,profileEffect:row.profile_effect,plusActive:row.plus_until>now(),joinedAt:row.created_at,online:(activeUsers.get(row.id)||0)>now()-75000};}
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
  const server=createServer(async(req,res)=>{
+  // Acknowledge account and playtime changes only after cloud persistence.
+  if(cloud&&(req.url?.startsWith('/api/')||req.url?.startsWith('/arcade-api/'))){
+   const end=res.end.bind(res);let finishing=false;
+   res.end=function(...args){
+    if(finishing)return res;
+    finishing=true;
+    void cloud.flushIfChanged(db,arcade.db).then(()=>end(...args)).catch(error=>{
+     console.error('Cloud account persistence failed:',error.name);
+     if(res.headersSent)return res.destroy(error);
+     res.removeHeader('Set-Cookie');
+     res.statusCode=503;
+     res.setHeader('Content-Type','application/json; charset=utf-8');
+     res.setHeader('Cache-Control','no-store');
+     end(JSON.stringify({error:'Account storage is temporarily unavailable. Changes were not confirmed. Please try again later.'}));
+    });
+    return res;
+   };
+  }
  if(process.env.COOKIE_SECURE==='1')res.setHeader('Strict-Transport-Security','max-age=15552000');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','credentialless');
  try{
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
@@ -62,9 +85,17 @@ export async function createPortal(options={}){
  }
  if(path.startsWith('/arcade-api/')){
   if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
-  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
+  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!cloud&&!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':cloud?'neon-backed-sqlite':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
   csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
   for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
+  // The administrator username is reserved against public registration.
+  if(path==='/arcade-api/auth/register'&&method==='POST'){
+   let registered;
+   try{registered=JSON.parse(Buffer.concat(chunks).toString('utf8'))}catch{}
+   const requested=typeof registered?.username==='string'?registered.username.trim().toLowerCase():'';
+   const reserved=String(process.env.PIXEL_ADMIN_USERNAME||options.adminUsername||'').trim().toLowerCase();
+   if(reserved&&requested===reserved)fail(403,'Administrator registration is restricted. Contact the site owner.');
+  }
   const protocol=req.headers['x-forwarded-proto']==='https'||process.env.COOKIE_SECURE==='1'?'https':'http';
   const origin=req.headers.origin||`${protocol}://${req.headers.host}`;
   const headers=new Headers();for(const[key,value]of Object.entries(req.headers))if(value&&key!=='host'&&key!=='content-length')headers.set(key,Array.isArray(value)?value.join(','):value);
@@ -109,7 +140,7 @@ export async function createPortal(options={}){
  if(path.startsWith('/api/')){
   csrf(req);limit(`all:${req.socket.remoteAddress}`,240);const u=userFor(req);if(u)activeUsers.set(u.id,now());
   if(path==='/api/health'&&method==='GET')return json(res,200,{ok:true,version:'2.1.0',games:catalogue.games.length});
-  if(path==='/api/config'&&method==='GET')return json(res,200,{backend:true,chat:true,marketplace:true,ephemeralStorage:process.env.STORAGE_MODE==='ephemeral',proxy:Boolean(config.proxyOrigin&&config.proxySecret),ai:aiReady,aiModel:config.aiModel||null,rooms:roomNames});
+  if(path==='/api/config'&&method==='GET')return json(res,200,{backend:true,chat:true,marketplace:true,ephemeralStorage:!cloud&&process.env.STORAGE_MODE==='ephemeral',proxy:Boolean(config.proxyOrigin&&config.proxySecret),ai:aiReady,aiModel:config.aiModel||null,rooms:roomNames});
   if(path==='/api/users'&&method==='GET'){
    const search=clean(url.searchParams.get('search')||'',24),after=Math.max(0,Number(url.searchParams.get('after'))||0),take=Math.min(100,Math.max(1,Number(url.searchParams.get('limit'))||50));
    const pattern='%'+search.replaceAll('\\','\\\\').replaceAll('%','\\%').replaceAll('_','\\_')+'%';
@@ -180,6 +211,6 @@ export async function createPortal(options={}){
   json(res,e.status||500,{error:e.status?e.message:'The server could not complete this request.'});if(!e.status)console.error('Portal request failed:',e.name);
  }
  });
- return{server,db,arcade,close:async()=>{clearInterval(sweep);await new Promise(resolve=>server.close(resolve));arcade.close();db.close();}};
+ return{server,db,arcade,close:async()=>{clearInterval(sweep);await new Promise(resolve=>server.close(resolve));if(cloud){await cloud.flushIfChanged(db,arcade.db);await cloud.close();}arcade.close();db.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const portal=await createPortal();const port=Number(process.env.PORT)||8080;portal.server.listen(port,'0.0.0.0',()=>console.log(`Pixel Portal listening on ${port}`));for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>portal.close().then(()=>process.exit(0)));}

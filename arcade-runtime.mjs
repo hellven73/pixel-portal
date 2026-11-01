@@ -22,10 +22,10 @@ async function prepare(){
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
  return{directory,worker,files:new Set(manifest.files.filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
 }
-export async function createArcade({dbPath,legacyDb,adminUsername=process.env.PIXEL_ADMIN_USERNAME||'',...extra}={}){
+export async function createArcade({dbPath,legacyDb,restoreSnapshot,adminUsername=process.env.PIXEL_ADMIN_USERNAME||'',...extra}={}){
  const source=await prepareArcade();
  if(dbPath!==':memory:')await mkdir(dirname(dbPath),{recursive:true});
- const db=new DatabaseSync(dbPath);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
+ const db=new DatabaseSync(dbPath);if(restoreSnapshot)db.deserialize(restoreSnapshot);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
  const initialized=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='arcade_accounts'").get();
  if(!initialized){db.exec('BEGIN IMMEDIATE');try{db.exec(await readFile(join(source.directory,'backend-schema.sql'),'utf8'));db.exec('COMMIT');}catch(error){db.exec('ROLLBACK');db.close();throw error;}}
  function statement(sql,params=[]){

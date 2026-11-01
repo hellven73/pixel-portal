@@ -83,3 +83,33 @@ test('arcade homepage includes a loading intro on every full navigation with ski
  }
  assert.equal((await fetch(h.base+'/portal')).status,200);
 });
+
+test('reserved administrator username cannot be claimed via public registration',async t=>{
+ const h=await harness({adminUsername:'archangel'});t.after(()=>h.app.close());
+ const res=await fetch(h.base+'/arcade-api/auth/register',{
+  method:'POST',headers:{Origin:h.base,'Content-Type':'application/json'},
+  body:JSON.stringify({username:'archangel',password:'A-strong-unique-passphrase-123'})
+ });
+ assert.equal(res.status,403);
+ assert.match((await res.json()).error,/administrator registration/i);
+});
+
+test('account writes wait for durable storage acknowledgement',async t=>{
+ let release,updates=0;
+ const cloud={
+  snapshots:{portal:null,arcade:null},
+  flushIfChanged:()=>{updates++;if(updates===2)return new Promise(resolve=>{release=resolve});return Promise.resolve()},
+  close:async()=>{}
+ };
+ const h=await harness({cloudSnapshots:cloud});t.after(()=>h.app.close());
+ const pending=fetch(h.base+'/api/auth/register',{
+  method:'POST',headers:{Origin:h.base,'Content-Type':'application/json'},
+  body:JSON.stringify({username:'durable_member',password:'Secure-password-for-testing'})
+ });
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(typeof release,'function');
+ release();
+ const response=await pending;
+ assert.equal(response.status,201);
+ assert.equal((await response.json()).user.username,'durable_member');
+});
