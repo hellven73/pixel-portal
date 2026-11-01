@@ -102,12 +102,14 @@ test('account writes wait for durable storage acknowledgement',async t=>{
   close:async()=>{}
  };
  const h=await harness({cloudSnapshots:cloud});t.after(()=>h.app.close());
+ const controller=new AbortController();
  const pending=fetch(h.base+'/api/auth/register',{
-  method:'POST',headers:{Origin:h.base,'Content-Type':'application/json'},
+  method:'POST',headers:{Origin:h.base,'Content-Type':'application/json'},signal:controller.signal,
   body:JSON.stringify({username:'durable_member',password:'Secure-password-for-testing'})
  });
- await new Promise(resolve=>setImmediate(resolve));
- assert.equal(typeof release,'function');
+ // Wait for the server's flush hook instead of assuming a single event-loop tick is enough.
+ for(let attempt=0;attempt<500&&typeof release!=='function';attempt++)await new Promise(resolve=>setTimeout(resolve,10));
+ if(typeof release!=='function'){controller.abort();assert.fail('The registration did not reach the durability gate within 5 seconds.');}
  release();
  const response=await pending;
  assert.equal(response.status,201);
@@ -148,5 +150,29 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
    assert.equal(assetResponse.status,200,path+' should load '+asset);
    assert.match(assetResponse.headers.get('content-type')||'',asset.endsWith('.css')?/text\/css/:/javascript/);
   }
+ }
+});
+
+
+test('robots and sitemap are served to crawlers while private API routes are excluded',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ for(const method of ['GET','HEAD']){
+  const robots=await fetch(h.base+'/robots.txt',{method,headers:{'User-Agent':'Googlebot'}});
+  assert.equal(robots.status,200);
+  assert.match(robots.headers.get('content-type'),/text\\/plain/);
+  const rules=await robots.text();
+  if(method==='GET'){
+   assert.match(rules,/User-agent: \\*/);
+   assert.match(rules,/Allow: \\//);
+   assert.match(rules,/Disallow: \\/api\\//);
+   assert.match(rules,/Disallow: \\/arcade-api\\//);
+   assert.doesNotMatch(rules,/Disallow: \\/(?:\\r?\\n|$)/);
+  }else assert.equal(rules,'');
+  const sitemap=await fetch(h.base+'/sitemap.xml',{method,headers:{'User-Agent':'Googlebot'}});
+  assert.equal(sitemap.status,200);
+  assert.match(sitemap.headers.get('content-type'),/application\\/xml/);
+  const xml=await sitemap.text();
+  if(method==='GET')assert.match(xml,/https:\\/\\/pixelarcade\\.com\\.au\\//);
+  else assert.equal(xml,'');
  }
 });
