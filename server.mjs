@@ -85,7 +85,7 @@ export async function createPortal(options={}){
  }
  if(path.startsWith('/arcade-api/')){
   if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
-  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
+  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!cloud&&!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':cloud?'neon-backed-sqlite':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
   csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
   for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
   // The administrator username is reserved against public registration.
@@ -140,7 +140,7 @@ export async function createPortal(options={}){
  if(path.startsWith('/api/')){
   csrf(req);limit(`all:${req.socket.remoteAddress}`,240);const u=userFor(req);if(u)activeUsers.set(u.id,now());
   if(path==='/api/health'&&method==='GET')return json(res,200,{ok:true,version:'2.1.0',games:catalogue.games.length});
-  if(path==='/api/config'&&method==='GET')return json(res,200,{backend:true,chat:true,marketplace:true,ephemeralStorage:process.env.STORAGE_MODE==='ephemeral',proxy:Boolean(config.proxyOrigin&&config.proxySecret),ai:aiReady,aiModel:config.aiModel||null,rooms:roomNames});
+  if(path==='/api/config'&&method==='GET')return json(res,200,{backend:true,chat:true,marketplace:true,ephemeralStorage:!cloud&&process.env.STORAGE_MODE==='ephemeral',proxy:Boolean(config.proxyOrigin&&config.proxySecret),ai:aiReady,aiModel:config.aiModel||null,rooms:roomNames});
   if(path==='/api/users'&&method==='GET'){
    const search=clean(url.searchParams.get('search')||'',24),after=Math.max(0,Number(url.searchParams.get('after'))||0),take=Math.min(100,Math.max(1,Number(url.searchParams.get('limit'))||50));
    const pattern='%'+search.replaceAll('\\','\\\\').replaceAll('%','\\%').replaceAll('_','\\_')+'%';
