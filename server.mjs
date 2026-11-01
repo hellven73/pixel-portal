@@ -39,7 +39,7 @@ export async function createPortal(options={}){
  const arcade=arcadeApiOrigin?{...await prepareArcade(),fetch:remoteArcade({origin:arcadeApiOrigin,fetcher:options.arcadeFetch,serviceAuthorization:options.arcadeServiceAuthorization??process.env.ARCADE_SERVICE_AUTHORIZATION}),close:()=>{}}:await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,restoreSnapshot:cloud?.snapshots?.arcade,adminUsername:options.adminUsername});
  if(cloud)await cloud.flushIfChanged(db,arcade.db);
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
- const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js','loading-screen.css','loading-screen.js']);
+ const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js','loading-screen.css','loading-screen.js','webports-home.js','webports-home.css']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
  const sweep=setInterval(()=>{for(const[id,seen]of activeUsers)if(now()-seen>75000)activeUsers.delete(id);for(const[key,v]of limits)if(now()-v.start>3600000)limits.delete(key);statement('DELETE FROM sessions WHERE expires<?').run(now());},60000);sweep.unref();
  function userFor(req){const match=(req.headers.cookie||'').match(/(?:^|;\s*)pixel_session=([a-f0-9]{64})(?:;|$)/);if(!match)return null;return statement('SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.hash=? AND s.expires>?').get(sha(match[1]),now())||null;}
@@ -129,6 +129,9 @@ export async function createPortal(options={}){
     const loaderJs=await readFile(join(root,'loading-screen.js'),'utf8');
     html=html.replace('<body>','<body>'+loaderHtml+'<script>'+loaderJs+'</script>');
    }
+   // Add native Webported Games to the bundled Arcade homepage (not /portal).
+   html=html.replace('</head>','<link rel="stylesheet" href="/webports-home.css?v=2"></head>');
+   html=html.replace('</body>','<script src="/webports-home.js?v=2" defer></script></body>');
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:html);
   }
