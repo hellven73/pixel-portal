@@ -89,9 +89,15 @@ export async function createPortal(options={}){
    let html=data.toString('utf8');
    if(!html.includes('G-4QH6SB2N2D'))html=html.replace('</head>',"<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-4QH6SB2N2D\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4QH6SB2N2D');</script>"+'</head>');
    if(!html.includes('rel="canonical"'))html=html.replace('</head>',"<meta name=\"description\" content=\"Play free browser games at Pixel Arcade. Explore mini games, big games, tools, and community features in one gaming hub.\"><link rel=\"canonical\" href=\"https://pixelarcade.com.au/\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"Pixel Arcade — Free Browser Games\"><meta property=\"og:description\" content=\"Explore free browser games and gaming tools at Pixel Arcade.\"><meta property=\"og:url\" content=\"https://pixelarcade.com.au/\">"+'</head>');
-   // Small first-visit intro, with no external dependencies and a skip button.
-   html=html.replace('</head>','<script>try{if(!sessionStorage.getItem("pixel-loader-session-v1"))document.documentElement.classList.add("pixel-loading-enabled")}catch{document.documentElement.classList.add("pixel-loading-enabled")}</script><link rel="stylesheet" href="/loading-screen.css"><script defer src="/loading-screen.js"></script></head>');
-   if(method!=='HEAD')html=html.replace('<body>','<body>'+(await readFile(join(root,'loading-screen.html'),'utf8')));
+   // Render-style splash replaces the previous first-visit-only overlay on every full page load.
+   // Inline its tiny assets early to prevent a flash of the previous loading screen.
+   const loaderCss=await readFile(join(root,'loading-screen.css'),'utf8');
+   html=html.replace('<head>','<head><script>document.documentElement.classList.add("pixel-loading-enabled")</script><style>'+loaderCss+'</style>');
+   if(method!=='HEAD'){
+    const loaderHtml=await readFile(join(root,'loading-screen.html'),'utf8');
+    const loaderJs=await readFile(join(root,'loading-screen.js'),'utf8');
+    html=html.replace('<body>','<body>'+loaderHtml+'<script>'+loaderJs+'</script>');
+   }
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:html);
   }
