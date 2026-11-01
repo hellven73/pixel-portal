@@ -163,7 +163,7 @@ export async function createPortal(options={}){
   if(res.headersSent){res.end();return;}
   // Browser navigations to missing pages get the themed 404; API and asset callers retain JSON errors.
   const wantsHtml=(req.headers.accept||'').includes('text/html');
-  const isApi=(()=>{try{return /^\\/(?:api|arcade-api)\\//.test(new URL(req.url,'http://portal.invalid').pathname);}catch{return false;}})();
+  const isApi=(()=>{try{const p=new URL(req.url,'http://portal.invalid').pathname;return p.startsWith('/api/')||p.startsWith('/arcade-api/');}catch{return false;}})();
   if(e.status===404&&['GET','HEAD'].includes(req.method)&&wantsHtml&&!isApi){
    try{
     const html=await readFile(join(root,'404.html'));
