@@ -45,3 +45,40 @@ test('custom-domain origin allowlist permits the owned hosts and rejects other s
  assert.equal((await h.request('/api/wallet/daily',{method:'POST',cookie:account.cookie,origin:'https://www.pixelarcade.com.au',data:{}})).status,200);
  assert.equal((await h.request('/api/chat/messages',{method:'POST',cookie:account.cookie,origin:'https://unrelated.invalid',data:{body:'must not be sent'}})).status,403);
 });
+
+test('bad page links render a branded 404 but API responses remain JSON',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ for(const path of ['/isuafhdsuf','/arcade/does-not-exist.html']){
+  const response=await fetch(h.base+path,{headers:{Accept:'text/html'}});
+  assert.equal(response.status,404);
+  assert.match(response.headers.get('content-type'),/text\/html/);
+  assert.equal(response.headers.get('x-robots-tag'),'noindex');
+  const html=await response.text();
+  assert.match(html,/404/);
+  assert.match(html,/Back to Arcade/);
+ }
+ const head=await fetch(h.base+'/random-link',{method:'HEAD',headers:{Accept:'text/html'}});
+ assert.equal(head.status,404);
+ assert.equal(await head.text(),'');
+ const api=await fetch(h.base+'/api/not-a-real-endpoint',{headers:{Accept:'text/html'}});
+ assert.equal(api.status,404);
+ assert.match(api.headers.get('content-type'),/application\/json/);
+ assert.equal((await api.json()).error,'Unknown endpoint.');
+});
+
+test('arcade homepage includes a first-visit loading intro with skip and assets',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ const response=await fetch(h.base+'/');
+ assert.equal(response.status,200);
+ const html=await response.text();
+ assert.match(html,/pixel-launch-loader/);
+ assert.match(html,/loading-screen\.js/);
+ assert.match(html,/loading-screen\.css/);
+ assert.match(html,/pixel-loader-session-v1/);
+ for(const asset of ['/loading-screen.js','/loading-screen.css']){
+  const res=await fetch(h.base+asset);
+  assert.equal(res.status,200);
+  assert.ok((await res.text()).includes('pixel-launch-'));
+ }
+ assert.equal((await fetch(h.base+'/portal')).status,200);
+});
