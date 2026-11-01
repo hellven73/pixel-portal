@@ -1,3 +1,4 @@
+html.pixel-loading-enabled body>:not(#pixel-launch-loader){visibility:hidden!important}
 /* Lightweight, self-contained opening screen. Shown only on the first visit in a tab. */
 #pixel-launch-loader,#pixel-launch-loader *{box-sizing:border-box}
 #pixel-launch-loader{display:none;position:fixed;inset:0;z-index:2147483647;overflow:auto;overscroll-behavior:contain;place-items:center;padding:28px 16px;background:#090b13;color:#eef0ff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;isolation:isolate}

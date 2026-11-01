@@ -66,15 +66,16 @@ test('bad page links render a branded 404 but API responses remain JSON',async t
  assert.equal((await api.json()).error,'Unknown endpoint.');
 });
 
-test('arcade homepage includes a first-visit loading intro with skip and assets',async t=>{
+test('arcade homepage includes a loading intro on every full navigation with skip and assets',async t=>{
  const h=await harness();t.after(()=>h.app.close());
  const response=await fetch(h.base+'/');
  assert.equal(response.status,200);
  const html=await response.text();
  assert.match(html,/pixel-launch-loader/);
- assert.match(html,/loading-screen\.js/);
- assert.match(html,/loading-screen\.css/);
- assert.match(html,/pixel-loader-session-v1/);
+ assert.match(html,/pixel-loading-enabled/);
+ assert.match(html,/pixel-launch-progress/);
+ assert.match(html,/window.addEventListener/);
+ assert.doesNotMatch(html,/pixel-loader-session-v1/);
  for(const asset of ['/loading-screen.js','/loading-screen.css']){
   const res=await fetch(h.base+asset);
   assert.equal(res.status,200);
