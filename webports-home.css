@@ -40,3 +40,6 @@
 #player.px-webport-theater #launchfeedback{display:none!important}
 #player.px-webport-theater #stage{height:auto!important;min-height:0!important;flex:1 1 auto!important;padding:0!important;overflow:hidden!important}
 #player.px-webport-theater #stage iframe{height:100%!important;min-height:0!important;max-height:none!important;width:100%!important}
+
+/* Match the compact sidebar's icon and label spacing. */
+#side-nav .px-webports-nav-icon{font-size:16px;display:inline-flex;align-items:center;justify-content:center;width:24px;flex-shrink:0}
