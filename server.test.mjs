@@ -131,3 +131,22 @@ test('homepage exposes embedded Webported Games without provider links',async t=
  assert.equal(styles.status,200);
  assert.match(await styles.text(),/px-webport-theater/);
 });
+
+test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ for(const path of ['/','/arcade','/arcade/']){
+  const response=await fetch(h.base+path);
+  assert.equal(response.status,200);
+  const html=await response.text();
+  const baseMatch=html.match(/<base href="([^"]+)"/);
+  assert.ok(baseMatch,path+' must explicitly set base href for bundled assets');
+  const base=new URL(baseMatch[1],h.base+path);
+  assert.equal(base.pathname,'/arcade/');
+  assert.match(html,/webports-home\.js\?v=2/);
+  for(const asset of ['extras.js','hub.js','api-client.js','community.js','style.css']){
+   const assetResponse=await fetch(new URL(asset,base));
+   assert.equal(assetResponse.status,200,path+' should load '+asset);
+   assert.match(assetResponse.headers.get('content-type')||'',asset.endsWith('.css')?/text\/css/:/javascript/);
+  }
+ }
+});

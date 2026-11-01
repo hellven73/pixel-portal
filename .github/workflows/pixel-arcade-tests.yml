@@ -19,4 +19,19 @@ jobs:
       - run: npm run check
       - run: node --test persistence.test.mjs
       - run: node --test --test-name-pattern='homepage exposes embedded Webported Games' server.test.mjs
+      - run: node --test --test-name-pattern='all Arcade URLs resolve bundled JavaScript and CSS' server.test.mjs
       - run: npm test
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm install --no-save --package-lock=false playwright@1.56.1
+      - run: npx playwright install chromium --with-deps
+      - run: node webports-browser-smoke.mjs

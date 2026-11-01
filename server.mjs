@@ -118,6 +118,12 @@ export async function createPortal(options={}){
   const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.wasm':'application/wasm','.data':'application/octet-stream'}[extname(file)]||'text/plain; charset=utf-8';
   if(file==='index.html'){
    let html=data.toString('utf8');
+   // The main Arcade is served from /, /arcade and /arcade/. Its vendored assets
+   // exist only at /arcade/<file>. An explicit base keeps CSS, JS, images and
+   // relative game links working regardless of which homepage URL is visited.
+   // Without it, / silently requests /hub.js, /extras.js etc. and navigation
+   // (including Webported Games) never initializes.
+   html=html.replace('<head>','<head><base href="/arcade/">');
    if(!html.includes('G-4QH6SB2N2D'))html=html.replace('</head>',"<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-4QH6SB2N2D\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4QH6SB2N2D');</script>"+'</head>');
    if(!html.includes('rel="canonical"'))html=html.replace('</head>',"<meta name=\"description\" content=\"Play free browser games at Pixel Arcade. Explore mini games, big games, tools, and community features in one gaming hub.\"><link rel=\"canonical\" href=\"https://pixelarcade.com.au/\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"Pixel Arcade — Free Browser Games\"><meta property=\"og:description\" content=\"Explore free browser games and gaming tools at Pixel Arcade.\"><meta property=\"og:url\" content=\"https://pixelarcade.com.au/\">"+'</head>');
    // Render-style splash replaces the previous first-visit-only overlay on every full page load.
