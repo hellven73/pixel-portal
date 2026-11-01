@@ -8,10 +8,22 @@ if(!sidebar||!main||typeof showSection!=='function')return;
 let ports=[],query='',featuredOnly=false,loaded=false,activePort=null;
 const button=make('button','side-link','');
 button.dataset.section='webports';
-const icon=make('span','','🚀'),label=document.createTextNode('Webported Games '),count=make('small','','…');
+const icon=make('span','px-webports-nav-icon','🚀'),label=make('span','compact-label','Webported Games'),count=make('small','','…');
 button.append(icon,label,count);
 const after=sidebar.querySelector('[data-section="big"]');
 if(after)after.after(button);else sidebar.append(button);
+// The bundled compact-ui.js reorganizes navigation after scripts load.
+// Watch for the nav rebuild and reinsert this button into the Play section.
+const navObserver=new MutationObserver(()=>{
+ if(button.isConnected)return;
+ const big=sidebar.querySelector('[data-section="big"]');
+ if(big)big.after(button);
+ else{
+  const playGroup=sidebar.querySelector('.compact-nav-group');
+  (playGroup||sidebar).append(button);
+ }
+});
+navObserver.observe(sidebar,{childList:true,subtree:true});
 const page=make('section','px-webports-page');
 page.id='px-webports-page';page.hidden=true;
 const heading=make('div','px-webports-heading');
