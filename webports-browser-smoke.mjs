@@ -29,7 +29,9 @@ try {
   nav:!!document.querySelector('#side-nav [data-section="webports"]'),
   names:[...document.querySelectorAll('#px-webports-page h3')].map(n=>n.textContent)
  }));
- console.log('REAL BROWSER HOMEPAGE:',JSON.stringify(result));
+ const navButtons=await page.locator('#side-nav button').evaluateAll(items=>items.map(e=>({label:e.textContent.trim(),dataset:e.dataset.section,html:e.outerHTML.slice(0,280)})).filter(v=>/webport/i.test(v.label)));
+ console.log('WEBPORT NAV ELEMENTS:',JSON.stringify(navButtons));
+  console.log('REAL BROWSER HOMEPAGE:',JSON.stringify(result));
  console.log('PAGE ERRORS:',JSON.stringify(consoleErrors.slice(0,15)));
  assert.equal(new URL(result.base).pathname,'/arcade/');
  assert.equal(result.section,'webports');
