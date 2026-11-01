@@ -13,6 +13,24 @@
       "requirements": "WebGL2 and hardware acceleration required"
     },
     {
+      "id": "port-ksp-web",
+      "name": "Kerbal Space Program",
+      "url": "https://ksp.ishotupa.school/",
+      "sourceUrl": "https://github.com/woahhcrackers/KSPWeb",
+      "host": "ksp.ishotupa.school",
+      "featured": true,
+      "requirements": "Large download, desktop WebGL and roughly 3 GB of RAM. May crash on Chromebooks."
+    },
+    {
+      "id": "port-plague-evolved-web",
+      "name": "Plague Inc: Evolved",
+      "url": "https://wasm.rip/files/plauge/index.html",
+      "sourceUrl": "https://github.com/Reeyuki/PlagueIncEvolved",
+      "host": "wasm.rip",
+      "featured": true,
+      "requirements": "Desktop WebGL; approximately 300 MB initial download."
+    },
+    {
       "id": "port-3b201c391a32",
       "name": "Among Us",
       "url": "https://wasm.rip/files/amongus/index.html",
