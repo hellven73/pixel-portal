@@ -16,7 +16,7 @@ const page=make('section','px-webports-page');
 page.id='px-webports-page';page.hidden=true;
 const heading=make('div','px-webports-heading');
 const introduction=make('div');
-introduction.append(make('div','eyebrow','PLAY THE IMPOSSIBLE'),make('h1','','Webported Games'),make('p','','Browser ports of games you know. Launch inside Pixel Arcade or open directly if embedding is blocked.'));
+introduction.append(make('div','eyebrow','PLAY THE IMPOSSIBLE'),make('h1','','Webported Games'),make('p','','Browser ports of games you know. Launch them inside Pixel Arcade without leaving the site.'));
 heading.append(introduction);
 const tools=make('div','px-webports-toolbar');
 const search=make('input','px-webports-search');search.type='search';search.placeholder='Search 18 webports…';search.setAttribute('aria-label','Search webported games');
@@ -55,10 +55,8 @@ function render(){
   const actions=make('div','px-webports-actions');
   const play=make('button','px-webports-play','▶ Play');play.type='button';
   play.onclick=()=>openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:true,help:port.requirements||'Web port hosted externally. Click inside the game for controls.'},true);
-  const external=make('a','px-webports-external','↗ Open directly');
-  external.href=port.url;external.target='_blank';external.rel='noopener noreferrer';
-  actions.append(play,external);
-  if(port.sourceUrl){const source=make('a','px-webports-source','Source');source.href=port.sourceUrl;source.target='_blank';source.rel='noopener noreferrer';actions.append(source)}
+  actions.append(play);
+  if(port.sourceUrl){const source=make('small','px-webports-source','Community port hosted by '+port.host);actions.append(source)}
   body.append(actions);card.append(art,body);grid.append(card);
  }
  if(!matches.length)grid.append(make('p','px-webports-empty','No matching webports. Try a different search.'));
@@ -72,13 +70,6 @@ async function load(){
   if(!Array.isArray(data.games))throw Error('Invalid catalogue');
   ports=data.games.filter(p=>p&&typeof p.name==='string'&&typeof p.url==='string'&&/^https:\/\//.test(p.url));
   count.textContent=String(ports.length);
-  if(Array.isArray(window.gameCatalog)){
-   for(const port of ports){
-    if(window.gameCatalog.some(g=>g.id===port.id))continue;
-    window.gameCatalog.push({id:port.id,name:port.name,cat:'Simulation',size:'big',url:port.url,external:true,help:port.requirements||'Third-party browser port',color:'#638dd2'});
-   }
-   if(typeof render==='function'){} // Card renderer below owns this dedicated section.
-  }
   render();
  }catch(error){
   loaded=false;info.textContent='Could not load webports: '+error.message;
