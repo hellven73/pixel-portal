@@ -49,6 +49,13 @@ export async function createPortal(options={}){
  if(process.env.COOKIE_SECURE==='1')res.setHeader('Strict-Transport-Security','max-age=15552000');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','credentialless');
  try{
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
+ if((path==='/robots.txt'||path==='/sitemap.xml')&&['GET','HEAD'].includes(method)){
+  const payload=path==='/robots.txt'
+   ?'User-agent: *\nAllow: /\nDisallow: /arcade-api/\nDisallow: /api/\nSitemap: https://pixelarcade.com.au/sitemap.xml\n'
+   :'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://pixelarcade.com.au/</loc></url>\n  <url><loc>https://pixelarcade.com.au/portal</loc></url>\n</urlset>\n';
+  res.writeHead(200,{'Content-Type':path==='/robots.txt'?'text/plain; charset=utf-8':'application/xml; charset=utf-8','Cache-Control':'public, max-age=3600'});
+  return res.end(method==='HEAD'?undefined:payload);
+ }
  if(path.startsWith('/arcade-api/')){
   if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
   if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
@@ -74,6 +81,13 @@ export async function createPortal(options={}){
   // Provider sign-in popups need their opener; the separate Scramjet service keeps isolation.
   res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');res.removeHeader('Cross-Origin-Embedder-Policy');
   const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.wasm':'application/wasm','.data':'application/octet-stream'}[extname(file)]||'text/plain; charset=utf-8';
+  if(file==='index.html'){
+   let html=data.toString('utf8');
+   if(!html.includes('G-4QH6SB2N2D'))html=html.replace('</head>',"<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-4QH6SB2N2D\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4QH6SB2N2D');</script>"+'</head>');
+   if(!html.includes('rel="canonical"'))html=html.replace('</head>',"<meta name=\"description\" content=\"Play free browser games at Pixel Arcade. Explore mini games, big games, tools, and community features in one gaming hub.\"><link rel=\"canonical\" href=\"https://pixelarcade.com.au/\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"Pixel Arcade — Free Browser Games\"><meta property=\"og:description\" content=\"Explore free browser games and gaming tools at Pixel Arcade.\"><meta property=\"og:url\" content=\"https://pixelarcade.com.au/\">"+'</head>');
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+   return res.end(method==='HEAD'?undefined:html);
+  }
   res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:data);
  }
  if(path==='/portal'||path==='/portal/'){
