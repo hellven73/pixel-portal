@@ -24,3 +24,19 @@
 .px-webports-actions .px-webports-source{opacity:.7}
 .px-webports-empty{opacity:.8}
 @media(max-width:680px){.px-webports-page{padding:18px 12px 36px}.px-webports-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}}
+
+/* Webported games use immersive CSS theater mode, not the native Fullscreen API.
+   This avoids the browser's "Press Esc to exit full screen" prompt for the player button. */
+#player.px-webport-theater{
+ width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;
+ margin:0!important;padding:12px!important;border:0!important;border-radius:0!important;
+ box-sizing:border-box!important;inset:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;
+}
+#player.px-webport-theater .playhead{flex:none;gap:12px}
+#player.px-webport-theater .gameinfo,
+#player.px-webport-theater .player-links,
+#player.px-webport-theater #pad,
+#player.px-webport-theater #trackingnote,
+#player.px-webport-theater #launchfeedback{display:none!important}
+#player.px-webport-theater #stage{height:auto!important;min-height:0!important;flex:1 1 auto!important;padding:0!important;overflow:hidden!important}
+#player.px-webport-theater #stage iframe{height:100%!important;min-height:0!important;max-height:none!important;width:100%!important}
