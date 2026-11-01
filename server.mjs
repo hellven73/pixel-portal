@@ -34,7 +34,7 @@ export async function createPortal(options={}){
  const arcadeApiOrigin=options.arcadeApiOrigin??process.env.ARCADE_API_ORIGIN;
  const arcade=arcadeApiOrigin?{...await prepareArcade(),fetch:remoteArcade({origin:arcadeApiOrigin,fetcher:options.arcadeFetch,serviceAuthorization:options.arcadeServiceAuthorization??process.env.ARCADE_SERVICE_AUTHORIZATION}),close:()=>{}}:await createArcade({dbPath:options.arcadeDbPath||(dbPath===':memory:'?':memory:':join(dirname(dbPath),'arcade.sqlite')),legacyDb:db,adminUsername:options.adminUsername});
  const aiReady=Boolean(config.aiBase&&config.aiModel&&(config.aiKey||config.allowLocalAI||options.aiFetch));
- const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js']);
+ const allowedFiles=new Set(['index.html','app.js','services.js','style.css','game-policy.js','icon.svg','catalogue.json','shop-data.json','webports.json','community.js','loading-screen.css','loading-screen.js']);
  function limit(key,max=30,window=60000){const current=limits.get(key);if(!current||now()-current.start>window){limits.set(key,{start:now(),n:1});return;}if(++current.n>max)fail(429,'Too many requests. Try again in a moment.');}
  const sweep=setInterval(()=>{for(const[id,seen]of activeUsers)if(now()-seen>75000)activeUsers.delete(id);for(const[key,v]of limits)if(now()-v.start>3600000)limits.delete(key);statement('DELETE FROM sessions WHERE expires<?').run(now());},60000);sweep.unref();
  function userFor(req){const match=(req.headers.cookie||'').match(/(?:^|;\s*)pixel_session=([a-f0-9]{64})(?:;|$)/);if(!match)return null;return statement('SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.hash=? AND s.expires>?').get(sha(match[1]),now())||null;}
@@ -89,6 +89,9 @@ export async function createPortal(options={}){
    let html=data.toString('utf8');
    if(!html.includes('G-4QH6SB2N2D'))html=html.replace('</head>',"<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-4QH6SB2N2D\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4QH6SB2N2D');</script>"+'</head>');
    if(!html.includes('rel="canonical"'))html=html.replace('</head>',"<meta name=\"description\" content=\"Play free browser games at Pixel Arcade. Explore mini games, big games, tools, and community features in one gaming hub.\"><link rel=\"canonical\" href=\"https://pixelarcade.com.au/\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"Pixel Arcade — Free Browser Games\"><meta property=\"og:description\" content=\"Explore free browser games and gaming tools at Pixel Arcade.\"><meta property=\"og:url\" content=\"https://pixelarcade.com.au/\">"+'</head>');
+   // Small first-visit intro, with no external dependencies and a skip button.
+   html=html.replace('</head>','<script>try{if(!sessionStorage.getItem("pixel-loader-session-v1"))document.documentElement.classList.add("pixel-loading-enabled")}catch{document.documentElement.classList.add("pixel-loading-enabled")}</script><link rel="stylesheet" href="/loading-screen.css"><script defer src="/loading-screen.js"></script></head>');
+   if(method!=='HEAD')html=html.replace('<body>','<body>'+(await readFile(join(root,'loading-screen.html'),'utf8')));
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:html);
   }
