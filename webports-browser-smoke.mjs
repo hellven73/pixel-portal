@@ -31,6 +31,9 @@ try {
  }));
  const navButtons=await page.locator('#side-nav button').evaluateAll(items=>items.map(e=>({label:e.textContent.trim(),dataset:e.dataset.section,html:e.outerHTML.slice(0,280)})).filter(v=>/webport/i.test(v.label)));
  console.log('WEBPORT NAV ELEMENTS:',JSON.stringify(navButtons));
+ const otherLinks=await page.evaluate(()=>[...document.querySelectorAll('a,button,summary,[role="button"]')].filter(e=>/webport/i.test(e.textContent)).map(e=>({tag:e.tagName,section:e.dataset.section,html:e.outerHTML.slice(0,500),parents:[e.parentElement?.className,e.parentElement?.parentElement?.className]})).slice(0,16));
+ console.log('ALL WEBPORT LINK ELEMENTS:',JSON.stringify(otherLinks));
+
   console.log('REAL BROWSER HOMEPAGE:',JSON.stringify(result));
  console.log('PAGE ERRORS:',JSON.stringify(consoleErrors.slice(0,15)));
  assert.equal(new URL(result.base).pathname,'/arcade/');
