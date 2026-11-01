@@ -49,6 +49,10 @@ export async function createPortal(options={}){
  if(process.env.COOKIE_SECURE==='1')res.setHeader('Strict-Transport-Security','max-age=15552000');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','credentialless');
  try{
  const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
+ if(path==='/ads.txt'&&['GET','HEAD'].includes(method)){
+  res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'});
+  return res.end(method==='HEAD'?undefined:'google.com, pub-8632851454203675, DIRECT, f08c47fec0942fa0\n');
+ }
  if((path==='/robots.txt'||path==='/sitemap.xml')&&['GET','HEAD'].includes(method)){
   const payload=path==='/robots.txt'
    ?'User-agent: *\nAllow: /\nDisallow: /arcade-api/\nDisallow: /api/\nSitemap: https://pixelarcade.com.au/sitemap.xml\n'
