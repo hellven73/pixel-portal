@@ -1,6 +1,6 @@
 import {DatabaseSync} from 'node:sqlite';
 import {readFile,mkdir,access} from 'node:fs/promises';
-import {createHash} from 'node:crypto';
+import {createHash,randomBytes,randomUUID,pbkdf2Sync} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {join,dirname} from 'node:path';
@@ -22,10 +22,10 @@ async function prepare(){
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
  return{directory,worker,files:new Set(manifest.files.filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
 }
-export async function createArcade({dbPath,legacyDb,adminUsername=process.env.PIXEL_ADMIN_USERNAME||'',...extra}={}){
+export async function createArcade({dbPath,legacyDb,restoreSnapshot,adminUsername=process.env.PIXEL_ADMIN_USERNAME||'',...extra}={}){
  const source=await prepareArcade();
  if(dbPath!==':memory:')await mkdir(dirname(dbPath),{recursive:true});
- const db=new DatabaseSync(dbPath);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
+ const db=new DatabaseSync(dbPath);if(restoreSnapshot)db.deserialize(restoreSnapshot);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
  const initialized=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='arcade_accounts'").get();
  if(!initialized){db.exec('BEGIN IMMEDIATE');try{db.exec(await readFile(join(source.directory,'backend-schema.sql'),'utf8'));db.exec('COMMIT');}catch(error){db.exec('ROLLBACK');db.close();throw error;}}
  function statement(sql,params=[]){
@@ -48,6 +48,32 @@ export async function createArcade({dbPath,legacyDb,adminUsername=process.env.PI
     db.prepare('INSERT INTO portal_imports VALUES(?)').run(user.id);db.exec('COMMIT');
    }catch(error){db.exec('ROLLBACK');throw error;}
   }
+ }
+ // An account owner can set this secret in Render's private environment to
+ // create/recover only the configured administrator account on the next boot.
+ // It must never be accepted from a browser or committed to GitHub.
+ const adminPassword=process.env.PIXEL_ADMIN_RESET_PASSWORD;
+ if(adminPassword){
+  const username=String(adminUsername||'').trim().toLowerCase();
+  if(!/^[a-z0-9_]{3,24}$/.test(username)||adminPassword.length<12||adminPassword.length>128)throw Error('Invalid admin recovery environment configuration.');
+  const old=db.prepare('SELECT user_id FROM arcade_accounts WHERE username=?').get(username);
+  const uid=old?.user_id||'arcade:'+randomUUID(),now=Date.now();
+  const salt=randomBytes(16).toString('hex');
+  const hash=pbkdf2Sync(adminPassword,salt,100000,32,'sha256').toString('hex');
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   if(old){
+    db.prepare('UPDATE arcade_accounts SET password_hash=?,salt=? WHERE user_id=?').run(hash,salt,uid);
+    db.prepare('DELETE FROM account_tokens WHERE user_id=?').run(uid);
+    db.prepare("DELETE FROM password_recovery WHERE user_id=?").run(uid);
+   }else{
+    db.prepare('INSERT INTO arcade_accounts(user_id,username,password_hash,salt,created_at) VALUES(?,?,?,?,?)').run(uid,username,hash,salt,now);
+    db.prepare('INSERT INTO players(user_id,name,created_at) VALUES(?,?,?)').run(uid,username,now);
+    db.prepare('INSERT OR IGNORE INTO market_wallets(user_id,coins) VALUES(?,0)').run(uid);
+   }
+   db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error}
+  console.warn('Admin recovery applied. Remove PIXEL_ADMIN_RESET_PASSWORD from Render after signing in and regenerate a recovery code.');
  }
  const env={DB,PIXEL_ADMIN_USERNAME:adminUsername,FRAMEX_PASSWORD_HASH:process.env.FRAMEX_PASSWORD_HASH,FRAMEX_PASSWORD_SALT:process.env.FRAMEX_PASSWORD_SALT,FRAMEX_SESSION_KEY:process.env.FRAMEX_SESSION_KEY,...extra};
  return{...source,db,fetch:request=>source.worker.fetch(request,env),close:()=>db.close()};
