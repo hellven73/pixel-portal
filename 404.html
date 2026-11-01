@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#090a19">
+<title>404 — Lost in the Arcade | Pixel Arcade</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--purple:#a777ff;--pink:#fc66bd;--cyan:#67e9f7}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;min-height:100dvh;overflow-x:hidden;color:#f7f3ff;background:radial-gradient(ellipse at 48% 20%,#39205a77,transparent 46%),radial-gradient(ellipse at 93% 85%,#143a5a55,transparent 45%),#090a19}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;background-image:linear-gradient(#a777ff1c 1px,transparent 1px),linear-gradient(90deg,#a777ff1c 1px,transparent 1px);background-size:45px 45px;mask-image:linear-gradient(to bottom,transparent,#000 42%,#000)}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,#0000 0px,#0000 4px,#0002 5px);opacity:.21}
+header{width:min(1100px,92vw);margin:0 auto;padding:30px 0;position:relative;z-index:1}
+.brand{display:inline-flex;gap:12px;align-items:center;text-decoration:none;color:#fff;font-size:17px;font-weight:850;letter-spacing:.02em}
+.logo{display:grid;place-items:center;width:39px;height:39px;border:1px solid #bf9cff8a;border-radius:12px;background:linear-gradient(135deg,#ab73ff35,#fc66bd18);box-shadow:0 0 30px #a777ff34;color:#e8d4ff;font-size:25px}
+main{min-height:calc(100dvh - 145px);display:grid;place-items:center;padding:26px 20px 70px;position:relative;z-index:1}
+.panel{width:min(760px,100%);border:1px solid #9b83d63d;border-radius:26px;background:linear-gradient(160deg,#17132bd9,#0d1025e0);box-shadow:0 30px 100px #0008,0 0 80px #8645f515;backdrop-filter:blur(16px);padding:clamp(26px,6vw,66px);text-align:center;overflow:hidden;position:relative}
+.panel:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,var(--purple),var(--cyan),transparent)}
+.eyebrow{display:inline-flex;gap:9px;align-items:center;border:1px solid #b48eff55;background:#b48eff13;border-radius:999px;padding:9px 15px;font-size:11px;letter-spacing:.17em;font-weight:800;color:#cbb4ff}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--pink);box-shadow:0 0 14px var(--pink)}
+.error{font-size:clamp(112px,23vw,208px);font-weight:950;line-height:1;letter-spacing:-.105em;margin:24px 18px 2px 0;background:linear-gradient(110deg,#fff 8%,#b183ff 47%,#fc66bd 85%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 35px #a777ff50)}
+h1{font-size:clamp(25px,4vw,40px);line-height:1.14;letter-spacing:-.04em;margin:4px 0 14px;font-weight:850}
+h1 span{color:var(--purple)}
+p{margin:0 auto;color:#b9b6cf;line-height:1.75;font-size:clamp(14px,2vw,16px);max-width:490px}
+.actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:32px}
+a.button{min-height:48px;padding:13px 23px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;font-size:14px;font-weight:750;transition:transform .2s,box-shadow .2s}
+a.button:hover{transform:translateY(-2px)}
+.primary{background:linear-gradient(110deg,#9d6dff,#ed6ec9);color:#130f24;box-shadow:0 9px 27px #a777ff38}
+.secondary{border:1px solid #b9a0ff55;color:#e6dfff;background:#ffffff09}
+.secondary:hover{box-shadow:0 8px 25px #8d6fe21c}
+.divider{height:1px;margin:34px auto 21px;background:linear-gradient(90deg,transparent,#907cb34f,transparent);width:90%}
+.hint{font-size:12px;color:#817f9b;letter-spacing:.03em}
+code{font:inherit;color:#d9c6ff}
+footer{text-align:center;color:#6e698a;font-size:12px;padding:0 16px 25px;position:relative;z-index:1}
+@media (prefers-reduced-motion:no-preference){.pulse{animation:blink 1.8s infinite}.error{animation:float 5s ease-in-out infinite}@keyframes blink{50%{opacity:.35}}@keyframes float{50%{transform:translateY(-5px)}}}
+@media(max-width:520px){header{padding:20px 0}.panel{border-radius:18px}.actions{flex-direction:column}.button{width:100%}.divider{margin-top:28px}.error{margin-top:24px}}
+</style>
+</head>
+<body>
+<header><a class="brand" href="/" aria-label="Pixel Arcade — Home"><span class="logo" aria-hidden="true">✦</span>PIXEL ARCADE</a></header>
+<main>
+  <section class="panel" aria-labelledby="missing-title">
+    <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> SYSTEM ALERT · PAGE NOT FOUND</div>
+    <div class="error" aria-hidden="true">404</div>
+    <h1 id="missing-title">You've entered the <span>void.</span></h1>
+    <p>This level doesn't exist, or the link has moved. No worries — your next adventure is just one click away.</p>
+    <nav class="actions" aria-label="Find your way back">
+      <a class="button primary" href="/">↗ &nbsp;Back to Arcade</a>
+      <a class="button secondary" href="/portal">⌁ &nbsp;Explore Portal</a>
+    </nav>
+    <div class="divider" aria-hidden="true"></div>
+    <div class="hint">ERROR CODE: <code>404_NOT_FOUND</code> &nbsp;·&nbsp; Try checking the URL</div>
+  </section>
+</main>
+<footer>PIXEL ARCADE &nbsp;·&nbsp; GAME OVER? NOT YET.</footer>
+</body>
+</html>
