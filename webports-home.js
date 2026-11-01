@@ -6,24 +6,8 @@ const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.class
 const sidebar=document.querySelector('#side-nav'),main=document.querySelector('main');
 if(!sidebar||!main||typeof showSection!=='function')return;
 let ports=[],query='',featuredOnly=false,loaded=false,activePort=null;
-const button=make('button','side-link','');
-button.dataset.section='webports';
-const icon=make('span','px-webports-nav-icon','🚀'),label=make('span','compact-label','Webported Games'),count=make('small','','…');
-button.append(icon,label,count);
-const after=sidebar.querySelector('[data-section="big"]');
-if(after)after.after(button);else sidebar.append(button);
-// The bundled compact-ui.js reorganizes navigation after scripts load.
-// Watch for the nav rebuild and reinsert this button into the Play section.
-const navObserver=new MutationObserver(()=>{
- if(button.isConnected)return;
- const big=sidebar.querySelector('[data-section="big"]');
- if(big)big.after(button);
- else{
-  const playGroup=sidebar.querySelector('.compact-nav-group');
-  (playGroup||sidebar).append(button);
- }
-});
-navObserver.observe(sidebar,{childList:true,subtree:true});
+// The Arcade already provides its own Webported games navigation.
+// Do not inject another sidebar button (the old rocket-emoji duplicate).
 const page=make('section','px-webports-page');
 page.id='px-webports-page';page.hidden=true;
 const heading=make('div','px-webports-heading');
@@ -46,13 +30,12 @@ showSection=function(next){
   page.hidden=false;
   section='webports';
   document.body.dataset.section='webports';
-  document.querySelectorAll('#side-nav .side-link').forEach(b=>b.classList.toggle('active',b===button));
+  document.querySelectorAll('#side-nav .side-link').forEach(b=>b.classList.toggle('active',b.dataset.section==='webports'));
   history.replaceState(null,'','#webports');
   window.scrollTo({top:0,behavior:'instant'});
   if(!loaded)void load();
  }else{page.hidden=true;previous(next);}
 };
-button.onclick=()=>showSection('webports');
 function render(){
  const matches=ports.filter(p=>p.name.toLowerCase().includes(query)&&(!featuredOnly||p.featured));
  info.textContent=matches.length+' of '+ports.length+' webported games';
@@ -83,7 +66,6 @@ async function load(){
   const data=await response.json();
   if(!Array.isArray(data.games))throw Error('Invalid catalogue');
   ports=data.games.filter(p=>p&&typeof p.name==='string'&&typeof p.url==='string'&&/^https:\/\//.test(p.url));
-  count.textContent=String(ports.length);
   render();
  }catch(error){
   loaded=false;info.textContent='Could not load webports: '+error.message;

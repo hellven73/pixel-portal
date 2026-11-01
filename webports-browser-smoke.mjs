@@ -26,15 +26,20 @@ try {
   section:document.body.dataset.section,
   visible:!document.querySelector('#px-webports-page')?.hidden,
   count:document.querySelectorAll('#px-webports-page .px-webports-card').length,
-  nav:!!document.querySelector('#side-nav [data-section="webports"]'),
+  emojiDuplicate:!!document.querySelector('#side-nav .px-webports-nav-icon'),
   names:[...document.querySelectorAll('#px-webports-page h3')].map(n=>n.textContent)
  }));
- console.log('REAL BROWSER HOMEPAGE:',JSON.stringify(result));
+ const navButtons=await page.locator('#side-nav button').evaluateAll(items=>items.map(e=>({label:e.textContent.trim(),dataset:e.dataset.section,html:e.outerHTML.slice(0,280)})).filter(v=>/webport/i.test(v.label)));
+ console.log('WEBPORT NAV ELEMENTS:',JSON.stringify(navButtons));
+ const otherLinks=await page.evaluate(()=>[...document.querySelectorAll('a,button,summary,[role="button"]')].filter(e=>/webport/i.test(e.textContent)).map(e=>({tag:e.tagName,section:e.dataset.section,html:e.outerHTML.slice(0,500),parents:[e.parentElement?.className,e.parentElement?.parentElement?.className]})).slice(0,16));
+ console.log('ALL WEBPORT LINK ELEMENTS:',JSON.stringify(otherLinks));
+
+  console.log('REAL BROWSER HOMEPAGE:',JSON.stringify(result));
  console.log('PAGE ERRORS:',JSON.stringify(consoleErrors.slice(0,15)));
  assert.equal(new URL(result.base).pathname,'/arcade/');
  assert.equal(result.section,'webports');
  assert.equal(result.visible,true);
- assert.equal(result.nav,true);
+ assert.equal(result.emojiDuplicate,false);
  assert.equal(result.count,18);
  assert.ok(result.names.includes('Kerbal Space Program'));
  assert.ok(result.names.includes('Plague Inc: Evolved'));
