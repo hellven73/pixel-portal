@@ -1,6 +1,6 @@
 /* Webported Games: native-feeling, isolated homepage layout. */
 #px-webports-page[hidden]{display:none!important}
-.px-webports-page{padding:22px 16px 48px;max-width:1300px;margin:0 auto;color:var(--text,#eee)}
+.px-webports-page{padding:22px 16px 48px;max-width:1300px;margin:0 auto;color:var(--ink,#eee)}
 .px-webports-heading{display:flex;align-items:end;justify-content:space-between;gap:15px;margin:0 0 22px}
 .px-webports-heading h1{font-size:clamp(30px,4vw,48px);margin:8px 0 12px;letter-spacing:-.04em}
 .px-webports-heading p{opacity:.72;max-width:660px;line-height:1.5;margin:0}
