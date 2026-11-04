@@ -9,8 +9,9 @@ async function harness(t,options={}){
  const app=await createPortal({dbPath:':memory:',adminUsername:'owner_test',...options});app.server.listen(0,'127.0.0.1');await once(app.server,'listening');t.after(()=>app.close());
  const base=`http://127.0.0.1:${app.server.address().port}`;
  async function request(path,{data,cookie,method=data?'POST':'GET',origin=base}={}){const r=await fetch(base+'/arcade-api/'+path,{method,headers:{Origin:origin,...(data?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined});return{status:r.status,data:await r.json(),cookie:r.headers.get('set-cookie')?.split(';')[0],setCookie:r.headers.get('set-cookie')};}
- async function register(username){const r=await request('auth/register',{data:{username,password:'Test-passphrase-3456!'}});assert.equal(r.status,201,JSON.stringify(r.data));assert.ok(!('token' in r.data));return r;}
- return{app,base,request,register};
+ async function seedAdmin(username,password='Test-passphrase-3456!'){const response=await app.arcade.fetch(new Request(base+'/api/auth/register',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username,password})}));return{status:response.status,data:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};}
+ async function register(username){if(username===(options.adminUsername||'owner_test'))return seedAdmin(username);const r=await request('auth/register',{data:{username,password:'Test-passphrase-3456!'}});assert.equal(r.status,201,JSON.stringify(r.data));assert.ok(!('token' in r.data));return r;}
+ return{app,base,request,register,seedAdmin};
 }
 test('Arcade chat memberships, all-user sidebar, edits, custom moderators and admin boundaries',async t=>{
  const h=await harness(t),owner=await h.register('owner_test'),a=await h.register('alice_test'),b=await h.register('bob_test');
@@ -118,4 +119,29 @@ test('existing-service bridge preserves account credentials and records with Htt
  assert.equal((await restarted.request('dev/framex',{cookie:login.cookie})).status,200);assert.equal((await restarted.request('dev/framex')).status,401);
  const stranger=await restarted.register('regular_test');assert.equal((await restarted.request('dev/framex?status=1',{cookie:stranger.cookie})).data.unlocked,false);
  await h.request('auth/logout',{cookie:login.cookie,data:{}});assert.equal((await restarted.request('profile',{cookie:login.cookie})).data.authenticated,false);
+});
+
+test('seven-character passwords work and only the configured archangel account is administrator',async t=>{
+ const h=await harness(t,{adminUsername:'archangel'});
+ assert.equal((await h.request('auth/register',{data:{username:'too_short',password:'123456'}})).status,400);
+ assert.equal((await h.request('auth/register',{data:{username:'archangel',password:'Abc123!'}})).status,403);
+ const admin=await h.seedAdmin('archangel','Abc123!');assert.equal(admin.status,201);assert.equal((await h.request('profile',{cookie:admin.cookie})).data.isAdmin,true);
+ const previous=await h.request('auth/register',{data:{username:'hellven73',password:'Def456!'}});assert.equal(previous.status,201);assert.equal((await h.request('profile',{cookie:previous.cookie})).data.isAdmin,false);
+ assert.equal((await h.request('admin',{cookie:admin.cookie})).status,200);assert.equal((await h.request('admin',{cookie:previous.cookie})).status,403);
+ assert.equal((await h.request('dev/framex?status=1',{cookie:admin.cookie})).data.adminAccess,true);assert.equal((await h.request('dev/framex?status=1',{cookie:previous.cookie})).data.adminAccess,false);
+ assert.equal((await h.request('auth/recovery',{cookie:admin.cookie,data:{action:'change',currentPassword:'Abc123!',newPassword:'Xyz789!'}})).status,200);
+ assert.equal((await h.request('auth/login',{data:{username:'archangel',password:'Xyz789!'}})).status,200);
+ for(const [username,password,status]of [['short_portal','123456',400],['seven_portal','Abc123!',201]]){const response=await fetch(h.base+'/api/auth/register',{method:'POST',headers:{Origin:h.base,'Content-Type':'application/json'},body:JSON.stringify({username,password})});assert.equal(response.status,status);}
+});
+
+test('GitHub mirror shares accounts through scoped bearer sessions and rejects other origins',async t=>{
+ const h=await harness(t);
+ const mirror=async(path,{data,token,origin='https://hellven73.github.io',method=data?'POST':'GET',cookie}={})=>{const response=await fetch(h.base+'/github-api/'+path,{method,headers:{Origin:origin,...(data?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined});return{response,data:method==='OPTIONS'?null:await response.json()};};
+ let result=await mirror('auth/register',{data:{username:'mirror_player',password:'Abc123!'}});assert.equal(result.response.status,201,JSON.stringify(result.data));assert.match(result.data.token,/^[a-f0-9]{64}$/);assert.equal(result.response.headers.get('set-cookie'),null);assert.equal(result.response.headers.get('access-control-allow-origin'),'https://hellven73.github.io');const token=result.data.token;
+ assert.equal((await mirror('profile',{token})).data.username,'mirror_player');
+ const mainLogin=await h.request('auth/login',{data:{username:'mirror_player',password:'Abc123!'}});assert.equal(mainLogin.status,200);assert.equal((await mirror('profile',{cookie:mainLogin.cookie})).data.authenticated,false);
+ assert.equal((await mirror('profile',{token,origin:'https://unrelated.invalid'})).response.status,403);
+ assert.equal((await mirror('auth/register',{data:{username:'owner_test',password:'Abc123!'}})).response.status,403);
+ assert.equal((await mirror('profile',{method:'OPTIONS'})).response.status,204);
+ assert.equal((await mirror('auth/logout',{token,data:{}})).response.status,200);assert.equal((await mirror('profile',{token})).data.authenticated,false);
 });

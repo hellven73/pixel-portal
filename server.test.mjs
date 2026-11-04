@@ -94,11 +94,11 @@ test('reserved administrator username cannot be claimed via public registration'
  assert.match((await res.json()).error,/administrator registration/i);
 });
 
-test('account writes wait for durable storage acknowledgement',async t=>{
- let release,updates=0;
+test('account writes wait for durable storage acknowledgement',{timeout:5000},async t=>{
+ let release,updates=0,reached;const storageReached=new Promise(resolve=>{reached=resolve});
  const cloud={
   snapshots:{portal:null,arcade:null},
-  flushIfChanged:()=>{updates++;if(updates===2)return new Promise(resolve=>{release=resolve});return Promise.resolve()},
+  flushIfChanged:()=>{updates++;if(updates===2)return new Promise(resolve=>{release=resolve;reached()});return Promise.resolve()},
   close:async()=>{}
  };
  const h=await harness({cloudSnapshots:cloud});t.after(()=>h.app.close());
@@ -106,7 +106,7 @@ test('account writes wait for durable storage acknowledgement',async t=>{
   method:'POST',headers:{Origin:h.base,'Content-Type':'application/json'},
   body:JSON.stringify({username:'durable_member',password:'Secure-password-for-testing'})
  });
- await new Promise(resolve=>setImmediate(resolve));
+ await storageReached;
  assert.equal(typeof release,'function');
  release();
  const response=await pending;

@@ -1,3 +1,4 @@
+import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
 import {randomBytes,createHash,scrypt as scryptCb,timingSafeEqual,createHmac} from 'node:crypto';
@@ -52,7 +53,7 @@ export async function createPortal(options={}){
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
  const server=createServer(async(req,res)=>{
   // Acknowledge account and playtime changes only after cloud persistence.
-  if(cloud&&(req.url?.startsWith('/api/')||req.url?.startsWith('/arcade-api/'))){
+  if(cloud&&(req.url?.startsWith('/api/')||req.url?.startsWith('/arcade-api/')||req.url?.startsWith('/github-api/'))){
    const end=res.end.bind(res);let finishing=false;
    res.end=function(...args){
     if(finishing)return res;
@@ -71,7 +72,9 @@ export async function createPortal(options={}){
   }
  if(process.env.COOKIE_SECURE==='1')res.setHeader('Strict-Transport-Security','max-age=15552000');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','credentialless');
  try{
- const url=new URL(req.url,'http://portal.invalid'),path=url.pathname,method=req.method;
+ const url=new URL(req.url,'http://portal.invalid'),method=req.method,githubMirror=url.pathname.startsWith('/github-api/');
+ if(githubMirror){if(req.headers.origin!==githubOrigin)fail(403,'This mirror origin is not allowed.');res.setHeader('Access-Control-Allow-Origin',githubOrigin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, DELETE, PUT, PATCH, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, X-Pixel-Client, X-Pixel-Dev-Token');if(method==='OPTIONS'){res.writeHead(204);return res.end();}}
+ const path=githubMirror?'/arcade-api/'+url.pathname.slice('/github-api/'.length):url.pathname;
  if(path==='/ads.txt'&&['GET','HEAD'].includes(method)){
   res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'});
   return res.end(method==='HEAD'?undefined:'google.com, pub-8632851454203675, DIRECT, f08c47fec0942fa0\n');
@@ -86,7 +89,7 @@ export async function createPortal(options={}){
  if(path.startsWith('/arcade-api/')){
   if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
   if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!cloud&&!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':cloud?'neon-backed-sqlite':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
-  csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
+  if(!githubMirror)csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
   for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
   // The administrator username is reserved against public registration.
   if(path==='/arcade-api/auth/register'&&method==='POST'){
@@ -97,8 +100,8 @@ export async function createPortal(options={}){
    if(reserved&&requested===reserved)fail(403,'Administrator registration is restricted. Contact the site owner.');
   }
   const protocol=req.headers['x-forwarded-proto']==='https'||process.env.COOKIE_SECURE==='1'?'https':'http';
-  const origin=req.headers.origin||`${protocol}://${req.headers.host}`;
-  const headers=new Headers();for(const[key,value]of Object.entries(req.headers))if(value&&key!=='host'&&key!=='content-length')headers.set(key,Array.isArray(value)?value.join(','):value);
+  const origin=githubMirror?`${protocol}://${req.headers.host}`:req.headers.origin||`${protocol}://${req.headers.host}`;
+  const headers=githubMirror?githubHeaders(req.headers,origin):new Headers();for(const[key,value]of Object.entries(githubMirror?{}:req.headers))if(value&&key!=='host'&&key!=='content-length')headers.set(key,Array.isArray(value)?value.join(','):value);
   headers.set('cf-connecting-ip',req.socket.remoteAddress||'local');
   const request=new Request(origin+'/api/'+path.slice('/arcade-api/'.length)+url.search,{method,headers,...(!['GET','HEAD'].includes(method)?{body:Buffer.concat(chunks)}:{})});
   if(path==='/arcade-api/browser-ticket'&&method==='POST'){
@@ -107,7 +110,7 @@ export async function createPortal(options={}){
    const {username}=await profile.json();const sub=parseInt(sha(username).slice(0,12),16),payload=Buffer.from(JSON.stringify({sub,exp:Math.floor(now()/1000)+600,origin})).toString('base64url'),signature=createHmac('sha256',config.proxySecret).update(payload).digest('base64url');
    return json(res,200,{origin:config.proxyOrigin,ticket:`${payload}.${signature}`});
   }
-  const response=await arcade.fetch(request);res.writeHead(response.status,Object.fromEntries(response.headers));return res.end(Buffer.from(await response.arrayBuffer()));
+  let response=await arcade.fetch(request);if(githubMirror)response=await githubResponse(response,path,Buffer.concat(chunks));res.writeHead(response.status,Object.fromEntries(response.headers));return res.end(Buffer.from(await response.arrayBuffer()));
  }
  if(path==='/'||path==='/arcade'||path.startsWith('/arcade/')){
   if(!['GET','HEAD'].includes(method))fail(405,'Method not allowed.');
@@ -123,7 +126,7 @@ export async function createPortal(options={}){
    // relative game links working regardless of which homepage URL is visited.
    // Without it, / silently requests /hub.js, /extras.js etc. and navigation
    // (including Webported Games) never initializes.
-   html=html.replace('<head>','<head><base href="/arcade/">');
+   html=html.replace(/<base\b[^>]*>/gi,'').replace('<head>','<head><base href="/arcade/">');
    if(!html.includes('G-4QH6SB2N2D'))html=html.replace('</head>',"<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-4QH6SB2N2D\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4QH6SB2N2D');</script>"+'</head>');
    if(!html.includes('rel="canonical"'))html=html.replace('</head>',"<meta name=\"description\" content=\"Play free browser games at Pixel Arcade. Explore mini games, big games, tools, and community features in one gaming hub.\"><link rel=\"canonical\" href=\"https://pixelarcade.com.au/\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"Pixel Arcade — Free Browser Games\"><meta property=\"og:description\" content=\"Explore free browser games and gaming tools at Pixel Arcade.\"><meta property=\"og:url\" content=\"https://pixelarcade.com.au/\">"+'</head>');
    // Render-style splash replaces the previous first-visit-only overlay on every full page load.
@@ -133,7 +136,7 @@ export async function createPortal(options={}){
    if(method!=='HEAD'){
     const loaderHtml=await readFile(join(root,'loading-screen.html'),'utf8');
     const loaderJs=await readFile(join(root,'loading-screen.js'),'utf8');
-    html=html.replace('<body>','<body>'+loaderHtml+'<script>'+loaderJs+'</script>');
+    html=html.replace(/<body\b[^>]*>/i,tag=>tag+loaderHtml+'<script>'+loaderJs+'</script>');
    }
    // Add native Webported Games to the bundled Arcade homepage (not /portal).
    html=html.replace('</head>','<link rel="stylesheet" href="/webports-home.css?v=2"></head>');
@@ -160,7 +163,7 @@ export async function createPortal(options={}){
   if(/^\/api\/users\/\d+$/.test(path)&&method==='GET'){const row=statement('SELECT id,username,frame,badge,name_color,profile_effect,plus_until,created_at FROM users WHERE id=?').get(Number(path.split('/').pop()));if(!row)fail(404,'This profile was not found.');return json(res,200,{profile:memberProfile(row)});}
   if(path==='/api/auth/me'&&method==='GET')return json(res,200,{user:publicUser(u)});
   if(path==='/api/auth/register'&&method==='POST'){
-   limit(`register:${req.socket.remoteAddress}`,10,3600000);const b=await body(req);const username=clean(b.username,24);if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))fail(400,'Use 3–24 letters, numbers, or underscores for your username.');if(typeof b.password!=='string'||b.password.length<10||b.password.length>128)fail(400,'Choose a password between 10 and 128 characters.');
+   limit(`register:${req.socket.remoteAddress}`,10,3600000);const b=await body(req);const username=clean(b.username,24);if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))fail(400,'Use 3–24 letters, numbers, or underscores for your username.');if(typeof b.password!=='string'||b.password.length<7||b.password.length>128)fail(400,'Choose a password between 7 and 128 characters.');
    if(statement('SELECT id FROM users WHERE username=?').get(username))fail(409,'That username is already taken.');const salt=randomBytes(16).toString('hex'),hash=Buffer.from(await scrypt(b.password,salt,64)).toString('hex');
    let id;try{id=statement('INSERT INTO users(username,password_hash,salt,coins,created_at) VALUES(?,?,?,2500,?)').run(username,hash,salt,now()).lastInsertRowid;}catch(e){if(String(e).includes('UNIQUE'))fail(409,'That username is already taken.');throw e;}
    const user=statement('SELECT * FROM users WHERE id=?').get(id);activeUsers.set(user.id,now());session(res,user,req);return json(res,201,{user:publicUser(user)});
@@ -209,7 +212,7 @@ export async function createPortal(options={}){
   if(res.headersSent){res.end();return;}
   // Browser navigations to missing pages get the themed 404; API and asset callers retain JSON errors.
   const wantsHtml=(req.headers.accept||'').includes('text/html');
-  const isApi=(()=>{try{const p=new URL(req.url,'http://portal.invalid').pathname;return p.startsWith('/api/')||p.startsWith('/arcade-api/');}catch{return false;}})();
+  const isApi=(()=>{try{const p=new URL(req.url,'http://portal.invalid').pathname;return p.startsWith('/api/')||p.startsWith('/arcade-api/')||p.startsWith('/github-api/');}catch{return false;}})();
   if(e.status===404&&['GET','HEAD'].includes(req.method)&&wantsHtml&&!isApi){
    try{
     const html=await readFile(join(root,'404.html'));

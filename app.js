@@ -132,4 +132,4 @@ $('#audio-upload').onchange=e=>{const file=e.target.files[0];if(!file)return;if(
 localAudio.addEventListener('error',()=>toast('This audio format is not supported by your browser.'));
 for(let i=0;i<40;i++){const bar=document.createElement('i');bar.style.height=`${4+Math.abs(Math.sin(i*.9)*Math.cos(i*.3))*20}px`;$('.equalizer')?.append(bar);}
 updateAudioUI();
-if(!$('#show-entrance').checked){$('#entrance').hidden=true;$('#app').hidden=false;}else {$('#entrance').classList.add('boot-active');starfield();}
+if(new URLSearchParams(location.search).get('embedded')==='1'||!$('#show-entrance').checked){$('#entrance').hidden=true;$('#app').hidden=false;}else {$('#entrance').classList.add('boot-active');starfield();}
