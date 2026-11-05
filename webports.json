@@ -13,17 +13,6 @@
       "requirements": "WebGL2 and hardware acceleration required"
     },
     {
-      "id": "port-webcraft-local",
-      "name": "WebCraft",
-      "url": "./webcraft.html",
-      "host": "Hosted on Pixel Arcade",
-      "sourceUrl": "https://github.com/Overv/WebCraft",
-      "featured": true,
-      "inlineOnly": true,
-      "local": true,
-      "requirements": "Open-source block-building sandbox \u00b7 WebGL \u00b7 WASD, Space and mouse. Not official Minecraft."
-    },
-    {
       "id": "port-ksp-web",
       "name": "Kerbal Space Program",
       "url": "https://ksp.ishotupa.school/",

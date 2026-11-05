@@ -10,4 +10,3 @@ The Pixel Portal application source is provided under AGPL-3.0; see LICENSE. Ori
 
 The separate webport collection contains public launch and source links from Carter54git’s Ultimate Catalog of Web Game Ports (https://github.com/Carter54git/Ultimate-Catalog-Of-Web-Game-Ports), retrieved 31 October 2026. Popular picks are an editorial selection, not a measured popularity ranking. Referenced ports remain on their third-party hosts and retain their owners’ rights. No original game data is bundled.
 
-WebCraft by Alexander Overvoorde is bundled under the zlib license. Its adapted single-player distribution and license are available at /arcade/webcraft-source.txt and /arcade/webcraft-license.txt. The bundled glMatrix library retains its original license header.
