@@ -119,7 +119,7 @@ test('homepage exposes embedded Webported Games without provider links',async t=
  const html=await fetch(h.base+'/');
  assert.equal(html.status,200);
  const body=await html.text();
- assert.match(body,/webports-home\.js\?v=3/);
+ assert.match(body,/webports-home\.js\?v=4/);
  assert.match(body,/webports-home\.css\?v=2/);
  const scripts=await fetch(h.base+'/webports-home.js');
  assert.equal(scripts.status,200);
@@ -142,7 +142,7 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   assert.ok(baseMatch,path+' must explicitly set base href for bundled assets');
   const base=new URL(baseMatch[1],h.base+path);
   assert.equal(base.pathname,'/arcade/');
-  assert.match(html,/webports-home\.js\?v=3/);
+  assert.match(html,/webports-home\.js\?v=4/);
   for(const asset of ['extras.js','hub.js','api-client.js','community.js','style.css']){
    const assetResponse=await fetch(new URL(asset,base));
    assert.equal(assetResponse.status,200,path+' should load '+asset);

@@ -2,6 +2,9 @@
 // Uses the same in-page game player and never handles account data.
 (()=>{
 'use strict';
+let initialized=false;
+function initialize(){
+if(initialized)return;initialized=true;
 const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
 const sidebar=document.querySelector('#side-nav'),main=document.querySelector('main');
 if(!sidebar||!main||typeof showSection!=='function')return;
@@ -110,4 +113,7 @@ if(typeof resumeGame==='function'){
 search.addEventListener('input',()=>{query=search.value.trim().toLowerCase();render()});
 filter.onclick=()=>{featuredOnly=!featuredOnly;filter.setAttribute('aria-pressed',String(featuredOnly));filter.classList.toggle('selected',featuredOnly);render()};
 if(window.pixelRequestedSection==='webports'||location.hash==='#webports')showSection('webports');
+}
+document.addEventListener('pixel-interface-ready',initialize,{once:true});
+if(!document.body.classList.contains('arcade-booting'))initialize();
 })();
