@@ -1,4 +1,4 @@
-import {readFile,writeFile,mkdir,rm,copyFile} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rm,copyFile,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 const base='/pixel/',out='github-pages-dist';
@@ -16,5 +16,6 @@ await writeFile(join(out,'index.html'),html);await writeFile(join(out,'arcade','
 for(const name of ['index.html','app.js','services.js','community.js','style.css','game-policy.js','icon.svg','shop-data.json','catalogue.json','webports.json']){let s=await readFile(name,'utf8');if(name==='index.html')s=s.replace('<head>',`<head><base href="${base}portal/">`);if(name==='services.js')s=s.replace("new URL('api/'+path,document.baseURI)","new URL('https://pixelarcade.com.au/api/'+path)");await writeFile(join(out,'portal',name),s);}
 await writeFile(join(out,'.nojekyll'),'');
 await writeFile(join(out,'404.html'),`<!doctype html><meta charset="utf-8"><title>Pixel Arcade</title><p>This page could not be found. <a href="${base}">Back to Pixel Arcade</a></p>`);
-execFileSync('tar',['-czf','site.tar.gz','-C',out,'.']);
+const publicFiles=(await readdir(out,{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>join(e.parentPath,e.name).slice(out.length+1)).sort();
+execFileSync('tar',['-czf','site.tar.gz','-C',out,...publicFiles]);
 console.log('Built public frontend only. Account services remain on pixelarcade.com.au.');
