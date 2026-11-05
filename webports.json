@@ -149,6 +149,17 @@
       "sourceUrl": "https://github.com/midzer/BelgianChocolateDuke3D",
       "host": "midzer.de",
       "featured": true
+    },
+    {
+      "id": "port-gta-vice-city-client",
+      "name": "GTA: Vice City \u00b7 browser client",
+      "url": "https://joncodeofficial.github.io/gta-vice-city-wasm/",
+      "sourceUrl": "https://github.com/joncodeofficial/gta-vice-city-wasm",
+      "host": "joncodeofficial.github.io",
+      "featured": true,
+      "requirements": "MIT-licensed browser client. Requires your own legitimate Vice City game archive (~668 MB), desktop browser, WebAssembly, OPFS and Service Worker support. Game assets are not open source. Setup verified; full gameplay requires your files.",
+      "clientLicense": "MIT",
+      "gameAssetsIncluded": false
     }
   ],
   "selection": "Distinct direct game embeds; provider landing pages removed."

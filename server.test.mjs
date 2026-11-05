@@ -36,7 +36,7 @@ test('public member directory paginates and profiles never expose account secret
  const profile=(await h.request('/api/users/'+a.body.user.id)).body.profile;assert.equal(profile.frame,'deco_foxtail');assert.equal(profile.online,true);assert.equal(typeof profile.joinedAt,'number');
  for(const value of [...page1.body.users,profile]){assert.deepEqual(Object.keys(value).sort(),['id','username','frame','badge','nameColor','profileEffect','plusActive','joinedAt','online'].sort());}
  assert.equal((await h.request('/api/users/999999')).status,404);await h.request('/api/auth/logout',{method:'POST',cookie:a.cookie,data:{}});assert.equal((await h.request('/api/users/'+a.body.user.id)).body.profile.online,false);
- const ports=await fetch(h.base+'/webports.json');assert.equal(ports.status,200);const games=(await ports.json()).games;assert.equal(games.length,18);assert.equal(new Set(games.map(p=>p.url)).size,18);assert.equal(games[0].url,'https://gd-webport.pages.dev/');assert.ok(games.some(p=>p.name==='Among Us'));assert.ok(games.some(p=>p.name==='Terraria'));assert.ok(games.some(p=>p.name==='Kerbal Space Program'&&p.url==='https://ksp.ishotupa.school/'));assert.ok(games.some(p=>p.name==='Plague Inc: Evolved'&&p.url==='https://wasm.rip/files/plauge/index.html'));assert.ok(games.every(p=>/^https?:\/\//.test(p.url)));assert.equal((await fetch(h.base+'/community.js')).status,200);
+ const ports=await fetch(h.base+'/webports.json');assert.equal(ports.status,200);const games=(await ports.json()).games;assert.equal(games.length,19);assert.equal(new Set(games.map(p=>p.url)).size,19);assert.equal(games[0].url,'https://gd-webport.pages.dev/');assert.ok(games.some(p=>p.name==='Among Us'));assert.ok(games.some(p=>p.name==='Terraria'));assert.ok(games.some(p=>p.name==='Kerbal Space Program'&&p.url==='https://ksp.ishotupa.school/'));assert.ok(games.some(p=>p.name==='Plague Inc: Evolved'&&p.url==='https://wasm.rip/files/plauge/index.html'));assert.ok(games.every(p=>/^https?:\/\//.test(p.url)));assert.equal((await fetch(h.base+'/community.js')).status,200);
 });
 
 test('custom-domain origin allowlist permits the owned hosts and rejects other sites',async t=>{
@@ -119,7 +119,7 @@ test('homepage exposes embedded Webported Games without provider links',async t=
  const html=await fetch(h.base+'/');
  assert.equal(html.status,200);
  const body=await html.text();
- assert.match(body,/webports-home\.js\?v=2/);
+ assert.match(body,/webports-home\.js\?v=3/);
  assert.match(body,/webports-home\.css\?v=2/);
  const scripts=await fetch(h.base+'/webports-home.js');
  assert.equal(scripts.status,200);
@@ -142,7 +142,7 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   assert.ok(baseMatch,path+' must explicitly set base href for bundled assets');
   const base=new URL(baseMatch[1],h.base+path);
   assert.equal(base.pathname,'/arcade/');
-  assert.match(html,/webports-home\.js\?v=2/);
+  assert.match(html,/webports-home\.js\?v=3/);
   for(const asset of ['extras.js','hub.js','api-client.js','community.js','style.css']){
    const assetResponse=await fetch(new URL(asset,base));
    assert.equal(assetResponse.status,200,path+' should load '+asset);

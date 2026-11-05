@@ -15,7 +15,7 @@ const introduction=make('div');
 introduction.append(make('div','eyebrow','PLAY THE IMPOSSIBLE'),make('h1','','Webported Games'),make('p','','Browser ports of games you know. Launch them inside Pixel Arcade without leaving the site.'));
 heading.append(introduction);
 const tools=make('div','px-webports-toolbar');
-const search=make('input','px-webports-search');search.type='search';search.placeholder='Search 18 webports…';search.setAttribute('aria-label','Search webported games');
+const search=make('input','px-webports-search');search.type='search';search.placeholder='Search webports…';search.setAttribute('aria-label','Search webported games');
 const filter=make('button','px-webports-filter','★ Featured only');filter.type='button';filter.setAttribute('aria-pressed','false');
 tools.append(search,filter);
 const info=make('p','px-webports-status','Loading webported games…');
@@ -61,7 +61,7 @@ function render(){
 async function load(){
  loaded=true;
  try{
-  const response=await fetch('/webports.json?v=7',{cache:'no-store'});
+  const response=await fetch('/webports.json?v=8',{cache:'no-store'});
   if(!response.ok)throw Error('Webports catalogue returned '+response.status);
   const data=await response.json();
   if(!Array.isArray(data.games))throw Error('Invalid catalogue');

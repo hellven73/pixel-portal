@@ -140,7 +140,7 @@ export async function createPortal(options={}){
    }
    // Add native Webported Games to the bundled Arcade homepage (not /portal).
    html=html.replace('</head>','<link rel="stylesheet" href="/webports-home.css?v=2"></head>');
-   html=html.replace('</body>','<script src="/webports-home.js?v=2" defer></script></body>');
+   html=html.replace('</body>','<script src="/webports-home.js?v=3" defer></script></body>');
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:html);
   }
