@@ -145,3 +145,13 @@ test('GitHub mirror shares accounts through scoped bearer sessions and rejects o
  assert.equal((await mirror('profile',{method:'OPTIONS'})).response.status,204);
  assert.equal((await mirror('auth/logout',{token,data:{}})).response.status,200);assert.equal((await mirror('profile',{token})).data.authenticated,false);
 });
+
+test('local WebCraft bundles its dependencies and block engine works without a provider',async()=>{
+ const {runInNewContext}=await import('node:vm');const context={console,Date,Math};
+ for(const file of ['webcraft-helpers.js','webcraft-blocks.js','webcraft-world.js','webcraft-physics.js','webcraft-player.js'])runInNewContext(await readFile(new URL('./arcade-source/'+file,import.meta.url),'utf8'),context);
+ runInNewContext('var w=new World(16,16,16);w.createFlatWorld(6);w.setBlock(4,4,7,BLOCK.DIRT);var placed=w.getBlock(4,4,7)===BLOCK.DIRT;w.setBlock(4,4,7,BLOCK.AIR);var removed=w.getBlock(4,4,7)===BLOCK.AIR;var p=new Player();p.setWorld(w);p.onKeyEvent(87,true);var moving=p.keys.w===true;p.onKeyEvent(87,false);var released=p.keys.w===false;',context);
+ assert.ok(context.placed&&context.removed&&context.moving&&context.released);
+ const html=await readFile(new URL('./arcade-source/webcraft.html',import.meta.url),'utf8');
+ for(const match of html.matchAll(/(?:src|href)="([^"]+)"/g)){assert.ok(!/^https?:/.test(match[1]),match[1]);await readFile(new URL('./arcade-source/'+match[1],import.meta.url));}
+ const {prepareArcade}=await import('./arcade-runtime.mjs');const app=await prepareArcade();assert.ok(app.files.has('webcraft.html'));assert.ok(app.files.has('webcraft-license.txt'));
+});

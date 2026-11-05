@@ -13,6 +13,17 @@
       "requirements": "WebGL2 and hardware acceleration required"
     },
     {
+      "id": "port-webcraft-local",
+      "name": "WebCraft",
+      "url": "./webcraft.html",
+      "host": "Hosted on Pixel Arcade",
+      "sourceUrl": "https://github.com/Overv/WebCraft",
+      "featured": true,
+      "inlineOnly": true,
+      "local": true,
+      "requirements": "Open-source block-building sandbox \u00b7 WebGL \u00b7 WASD, Space and mouse. Not official Minecraft."
+    },
+    {
       "id": "port-ksp-web",
       "name": "Kerbal Space Program",
       "url": "https://ksp.ishotupa.school/",
@@ -98,14 +109,6 @@
       "id": "port-0f6cd643f3d8",
       "name": "Super Mario 64",
       "url": "https://rgc.zone/ports/sm64-main/index.html",
-      "sourceUrl": null,
-      "host": "rgc.zone",
-      "featured": true
-    },
-    {
-      "id": "port-762235b4d056",
-      "name": "Minecraft 0.6.1",
-      "url": "https://rgc.zone/ports/minecraft061/index.html",
       "sourceUrl": null,
       "host": "rgc.zone",
       "featured": true

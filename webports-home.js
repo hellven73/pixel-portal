@@ -54,7 +54,7 @@ function render(){
   const play=make('button','px-webports-play','▶ Play');play.type='button';
   play.onclick=()=>{
    activePort=port.id;
-   openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:true,help:port.requirements||'Click inside the game for controls.'},true);
+   openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:!port.local,help:port.requirements||'Click inside the game for controls.'},true);
   };
   actions.append(play);
   body.append(actions);card.append(art,body);grid.append(card);
@@ -106,7 +106,7 @@ if(typeof resumeGame==='function'){
   if(!port)return resumeGame();
   window.pixelPendingGameId='';
   activePort=pending;
-  openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:true,help:port.requirements||'Click inside the game for controls.'},true);
+  openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:!port.local,help:port.requirements||'Click inside the game for controls.'},true);
   return true;
  };
 }
