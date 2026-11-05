@@ -1,7 +1,7 @@
 import {readFile,writeFile,mkdir,rm,copyFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
-const base='/pixel-arcade-mirror/',out='github-pages-dist';
+const base='/pixel/',out='github-pages-dist';
 await rm(out,{recursive:true,force:true});await mkdir(join(out,'arcade'),{recursive:true});await mkdir(join(out,'portal'),{recursive:true});
 const manifest=JSON.parse(await readFile('arcade-manifest.json','utf8'));
 const removed=['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'];
