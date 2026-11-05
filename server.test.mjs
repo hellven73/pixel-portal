@@ -150,3 +150,15 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   }
  }
 });
+
+test('owned HTML pages include one current Google tag at the start of head',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ for(const path of ['/','/arcade/','/portal','/arcade/arcade.html','/arcade/manual.html','/arcade/terms.html','/arcade/slope.html','/arcade/browser-launch.html','/arcade/hextris.html','/not-a-real-page']){
+  const response=await fetch(h.base+path,{headers:{Accept:'text/html'}});const html=await response.text();
+  assert.equal(response.status,path==='/not-a-real-page'?404:200,path);
+  assert.equal((html.match(/src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-6Y3DXZJTDB"/g)||[]).length,1,path);
+  assert.equal((html.match(/gtag\('config', 'G-6Y3DXZJTDB'\)/g)||[]).length,1,path);
+  assert.match(html,/<head\b[^>]*>\s*<!-- Google tag \(gtag\.js\) -->\s*<script async src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-6Y3DXZJTDB"/i,path);
+  assert.ok(!html.includes('G-4QH6SB2N2D'),path);
+ }
+});

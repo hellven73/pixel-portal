@@ -1,3 +1,4 @@
+import {withGoogleTag} from './analytics.mjs';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,dirname,extname,sep} from 'node:path';
@@ -22,7 +23,7 @@ export function createBrowserServer(options={}){
  if(['/','/browser.html'].includes(url.pathname))path=resolve(root,'browser.html');if(['/browser.js','/sw.js','/epoxy-adapter.mjs'].includes(url.pathname))path=resolve(root,url.pathname.slice(1));
  if(!path){res.writeHead(404);return res.end('Not found');}
  let data=await readFile(path);
- const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm','.json':'application/json','.map':'application/json'}[extname(path)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':'no-store','Service-Worker-Allowed':'/'});res.end(req.method==='HEAD'?undefined:data);
+ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm','.json':'application/json','.map':'application/json'}[extname(path)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':'no-store','Service-Worker-Allowed':'/'});res.end(req.method==='HEAD'?undefined:(mime.startsWith('text/html')?withGoogleTag(data.toString('utf8')):data));
  }catch{res.writeHead(404);res.end('Not found');}
  });
  server.on('upgrade',(req,socket,head)=>{

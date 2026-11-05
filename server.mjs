@@ -1,3 +1,4 @@
+import {withGoogleTag} from './analytics.mjs';
 import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
@@ -127,7 +128,6 @@ export async function createPortal(options={}){
    // Without it, / silently requests /hub.js, /extras.js etc. and navigation
    // (including Webported Games) never initializes.
    html=html.replace(/<base\b[^>]*>/gi,'').replace('<head>','<head><base href="/arcade/">');
-   if(!html.includes('G-4QH6SB2N2D'))html=html.replace('</head>',"<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-4QH6SB2N2D\"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-4QH6SB2N2D');</script>"+'</head>');
    if(!html.includes('rel="canonical"'))html=html.replace('</head>',"<meta name=\"description\" content=\"Play free browser games at Pixel Arcade. Explore mini games, big games, tools, and community features in one gaming hub.\"><link rel=\"canonical\" href=\"https://pixelarcade.com.au/\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"Pixel Arcade — Free Browser Games\"><meta property=\"og:description\" content=\"Explore free browser games and gaming tools at Pixel Arcade.\"><meta property=\"og:url\" content=\"https://pixelarcade.com.au/\">"+'</head>');
    // Render-style splash replaces the previous first-visit-only overlay on every full page load.
    // Inline its tiny assets early to prevent a flash of the previous loading screen.
@@ -142,12 +142,12 @@ export async function createPortal(options={}){
    html=html.replace('</head>','<link rel="stylesheet" href="/webports-home.css?v=2"></head>');
    html=html.replace('</body>','<script src="/webports-home.js?v=4" defer></script></body>');
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
-   return res.end(method==='HEAD'?undefined:html);
+   return res.end(method==='HEAD'?undefined:withGoogleTag(html));
   }
-  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:data);
+  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')?withGoogleTag(data.toString('utf8')):data));
  }
  if(path==='/portal'||path==='/portal/'){
-  const html=(await readFile(join(root,'index.html'),'utf8')).replace('<head>','<head><base href="/">');res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(method==='HEAD'?undefined:html);
+  const html=(await readFile(join(root,'index.html'),'utf8')).replace('<head>','<head><base href="/">');res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(method==='HEAD'?undefined:withGoogleTag(html));
  }
  if(path.startsWith('/api/')){
   csrf(req);limit(`all:${req.socket.remoteAddress}`,240);const u=userFor(req);if(u)activeUsers.set(u.id,now());
@@ -207,7 +207,7 @@ export async function createPortal(options={}){
   fail(404,'Unknown endpoint.');
  }
  if(!['GET','HEAD'].includes(method))fail(405,'Method not allowed.');let file=decodeURIComponent(path.slice(1)||'index.html');if(!allowedFiles.has(file))fail(404,'Not found.');
- const data=await readFile(join(root,file)),mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml'}[extname(file)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.css'].includes(extname(file))?'no-cache':'public, max-age=300'});res.end(method==='HEAD'?undefined:data);
+ const data=await readFile(join(root,file)),mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml'}[extname(file)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.css'].includes(extname(file))?'no-cache':'public, max-age=300'});res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')?withGoogleTag(data.toString('utf8')):data));
  }catch(e){
   if(res.headersSent){res.end();return;}
   // Browser navigations to missing pages get the themed 404; API and asset callers retain JSON errors.
@@ -217,7 +217,7 @@ export async function createPortal(options={}){
    try{
     const html=await readFile(join(root,'404.html'));
     res.writeHead(404,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex'});
-    return res.end(req.method==='HEAD'?undefined:html);
+    return res.end(req.method==='HEAD'?undefined:withGoogleTag(html));
    }catch(error){console.error('Could not serve 404 page:',error.name);}
   }
   json(res,e.status||500,{error:e.status?e.message:'The server could not complete this request.'});if(!e.status)console.error('Portal request failed:',e.name);
