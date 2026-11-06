@@ -1,7 +1,7 @@
 {
   "source": "https://github.com/hellven73/pixel-arcade",
   "sourceCommit": "24df2de35ee1b4b9b86e1fbc88a8cdce3b401189",
-  "archiveSha256": "3ad99d31955fd9f683e7d64bc2e0269d4a9a9b392ff98143a955a72632f34d75",
+  "archiveSha256": "2c1099562b15df2f9661e949b98c812c883139cfc86d306cd6cf7f268dd1cd0c",
   "files": [
     ".slope-build.data.f3NRH3",
     "BACKEND.md",
@@ -104,6 +104,9 @@
     "market-catalog.js",
     "marketplace.css",
     "marketplace.js",
+    "new-games.css",
+    "new-games.js",
+    "new-games.json",
     "onboarding.css",
     "onboarding.js",
     "originals.json",
