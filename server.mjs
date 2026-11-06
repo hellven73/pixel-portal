@@ -106,9 +106,9 @@ export async function createPortal(options={}){
   headers.set('cf-connecting-ip',req.socket.remoteAddress||'local');
   const request=new Request(origin+'/api/'+path.slice('/arcade-api/'.length)+url.search,{method,headers,...(!['GET','HEAD'].includes(method)?{body:Buffer.concat(chunks)}:{})});
   if(path==='/arcade-api/browser-ticket'&&method==='POST'){
-   const profile=await arcade.fetch(new Request(origin+'/api/profile',{headers}));if(profile.status!==200)fail(401,'Sign in to use the browser.');
+   const profile=await arcade.fetch(new Request(origin+'/api/profile',{headers}));if(profile.status!==200)fail(401,'Sign in to use Scramjet.');const profileData=await profile.json();if(profileData.authenticated!==true||typeof profileData.username!=='string'||!profileData.username)fail(401,'Sign in to use Scramjet.');
    if(!config.proxyOrigin||!config.proxySecret)fail(503,'The browser server has not been connected yet.');
-   const {username}=await profile.json();const sub=parseInt(sha(username).slice(0,12),16),payload=Buffer.from(JSON.stringify({sub,exp:Math.floor(now()/1000)+600,origin})).toString('base64url'),signature=createHmac('sha256',config.proxySecret).update(payload).digest('base64url');
+   const {username}=profileData;const sub=parseInt(sha(username).slice(0,12),16),payload=Buffer.from(JSON.stringify({sub,exp:Math.floor(now()/1000)+600,origin:githubMirror?githubOrigin:origin})).toString('base64url'),signature=createHmac('sha256',config.proxySecret).update(payload).digest('base64url');
    return json(res,200,{origin:config.proxyOrigin,ticket:`${payload}.${signature}`});
   }
   let response=await arcade.fetch(request);if(githubMirror)response=await githubResponse(response,path,Buffer.concat(chunks));res.writeHead(response.status,Object.fromEntries(response.headers));return res.end(Buffer.from(await response.arrayBuffer()));
@@ -119,7 +119,7 @@ export async function createPortal(options={}){
   if(!arcade.files.has(file))fail(404,'Not found.');const data=await readFile(join(arcade.directory,file));
   // Provider sign-in popups need their opener; the separate Scramjet service keeps isolation.
   res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');res.removeHeader('Cross-Origin-Embedder-Policy');
-  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.wasm':'application/wasm','.data':'application/octet-stream','.gz':'application/gzip'}[extname(file)]||'text/plain; charset=utf-8';
+  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.wasm':'application/wasm','.data':'application/octet-stream','.gz':'application/gzip'}[extname(file)]||'text/plain; charset=utf-8';
   if(file==='index.html'){
    let html=data.toString('utf8');
    // The main Arcade is served from /, /arcade and /arcade/. Its vendored assets

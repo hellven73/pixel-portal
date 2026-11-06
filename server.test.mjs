@@ -172,3 +172,14 @@ test('Quake II engine is local while original game data stays user-supplied',asy
  for(const file of ['q2-engine.js','index.data','q2-license.txt','q2-source.tar.gz','q2-gl4es-source.tar.gz'])assert.equal((await fetch(h.base+'/arcade/'+file,{method:'HEAD'})).status,200,file);
  const script=await(await fetch(h.base+'/arcade/q2-launcher.js')).text();assert.doesNotMatch(script,/https?:\/\//);assert.match(script,/file\.arrayBuffer\(\)/);assert.doesNotMatch(script,/FormData|XMLHttpRequest|fetch\(/);
 });
+
+test('Scramjet tickets require sign-in and preserve the calling mirror origin',async t=>{
+ const secret='test-only-scramjet-shared-secret-at-least-32-characters';const h=await harness({proxyOrigin:'https://proxy.example',proxySecret:secret});t.after(()=>h.app.close());
+ const post=async(path,{origin=h.base,data={},cookie,token}={})=>fetch(h.base+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});
+ assert.equal((await post('/arcade-api/browser-ticket')).status,401);
+ const registered=await post('/arcade-api/auth/register',{data:{username:'scramjet_reader',password:'Test-pass-123!'}});assert.equal(registered.status,201);const cookie=registered.headers.get('set-cookie').split(';')[0];
+ const native=await post('/arcade-api/browser-ticket',{cookie});assert.equal(native.status,200);const nativeData=await native.json();assert.equal(verifyTicket(nativeData.ticket,secret),true);assert.equal(JSON.parse(Buffer.from(nativeData.ticket.split('.')[0],'base64url')).origin,h.base);
+ const origin='https://hellven73.github.io';const login=await post('/github-api/auth/login',{origin,data:{username:'scramjet_reader',password:'Test-pass-123!'}});assert.equal(login.status,200);const {token}=await login.json();assert.ok(token);
+ const mirror=await post('/github-api/browser-ticket',{origin,token});assert.equal(mirror.status,200);const mirrorData=await mirror.json();assert.equal(verifyTicket(mirrorData.ticket,secret),true);assert.equal(JSON.parse(Buffer.from(mirrorData.ticket.split('.')[0],'base64url')).origin,origin);
+ assert.equal((await post('/github-api/browser-ticket',{origin})).status,401);
+});
