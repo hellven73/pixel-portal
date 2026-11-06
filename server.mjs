@@ -119,7 +119,7 @@ export async function createPortal(options={}){
   if(!arcade.files.has(file))fail(404,'Not found.');const data=await readFile(join(arcade.directory,file));
   // Provider sign-in popups need their opener; the separate Scramjet service keeps isolation.
   res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');res.removeHeader('Cross-Origin-Embedder-Policy');
-  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.wasm':'application/wasm','.data':'application/octet-stream'}[extname(file)]||'text/plain; charset=utf-8';
+  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.wasm':'application/wasm','.data':'application/octet-stream','.gz':'application/gzip'}[extname(file)]||'text/plain; charset=utf-8';
   if(file==='index.html'){
    let html=data.toString('utf8');
    // The main Arcade is served from /, /arcade and /arcade/. Its vendored assets

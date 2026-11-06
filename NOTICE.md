@@ -10,3 +10,6 @@ The Pixel Portal application source is provided under AGPL-3.0; see LICENSE. Ori
 
 The separate webport collection contains public launch and source links from Carter54git’s Ultimate Catalog of Web Game Ports (https://github.com/Carter54git/Ultimate-Catalog-Of-Web-Game-Ports), retrieved 31 October 2026. Popular picks are an editorial selection, not a measured popularity ranking. Referenced ports remain on their third-party hosts and retain their owners’ rights. No original game data is bundled.
 
+
+
+Qwasm2 is hosted as an engine-only client under GPL v2 and its included third-party licenses. License texts, source references and source archives are available at /arcade/q2-source.txt. Original Quake II game data is not distributed.

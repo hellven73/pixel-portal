@@ -36,7 +36,7 @@ test('public member directory paginates and profiles never expose account secret
  const profile=(await h.request('/api/users/'+a.body.user.id)).body.profile;assert.equal(profile.frame,'deco_foxtail');assert.equal(profile.online,true);assert.equal(typeof profile.joinedAt,'number');
  for(const value of [...page1.body.users,profile]){assert.deepEqual(Object.keys(value).sort(),['id','username','frame','badge','nameColor','profileEffect','plusActive','joinedAt','online'].sort());}
  assert.equal((await h.request('/api/users/999999')).status,404);await h.request('/api/auth/logout',{method:'POST',cookie:a.cookie,data:{}});assert.equal((await h.request('/api/users/'+a.body.user.id)).body.profile.online,false);
- const ports=await fetch(h.base+'/webports.json');assert.equal(ports.status,200);const games=(await ports.json()).games;assert.equal(games.length,18);assert.equal(new Set(games.map(p=>p.url)).size,18);assert.equal(games[0].url,'https://gd-webport.pages.dev/');assert.ok(games.some(p=>p.name==='Among Us'));assert.ok(games.some(p=>p.name==='Terraria'));assert.ok(games.some(p=>p.name==='Kerbal Space Program'&&p.url==='https://ksp.ishotupa.school/'));assert.ok(games.some(p=>p.name==='Plague Inc: Evolved'&&p.url==='https://wasm.rip/files/plauge/index.html'));assert.ok(games.every(p=>/^https?:\/\//.test(p.url)));assert.equal((await fetch(h.base+'/community.js')).status,200);
+ const ports=await fetch(h.base+'/webports.json');assert.equal(ports.status,200);const games=(await ports.json()).games;assert.equal(games.length,18);assert.equal(new Set(games.map(p=>p.url)).size,18);assert.equal(games[0].url,'https://gd-webport.pages.dev/');assert.ok(games.some(p=>p.name==='Among Us'));assert.ok(games.some(p=>p.name==='Terraria'));assert.ok(games.some(p=>p.name==='Kerbal Space Program'&&p.url==='https://ksp.ishotupa.school/'));assert.ok(games.some(p=>p.name==='Plague Inc: Evolved'&&p.url==='https://wasm.rip/files/plauge/index.html'));assert.ok(games.every(p=>/^https?:\/\//.test(p.url)||(p.local&&p.url==='./q2.html')));assert.equal((await fetch(h.base+'/community.js')).status,200);
 });
 
 test('custom-domain origin allowlist permits the owned hosts and rejects other sites',async t=>{
@@ -161,4 +161,14 @@ test('owned HTML pages include one current Google tag at the start of head',asyn
   assert.match(html,/<head\b[^>]*>\s*<!-- Google tag \(gtag\.js\) -->\s*<script async src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-6Y3DXZJTDB"/i,path);
   assert.ok(!html.includes('G-4QH6SB2N2D'),path);
  }
+});
+
+test('Quake II engine is local while original game data stays user-supplied',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ const ports=(await(await fetch(h.base+'/webports.json')).json()).games;const q2=ports.find(g=>g.name==='Quake II');assert.equal(q2.url,'./q2.html');assert.equal(q2.local,true);assert.equal(q2.gameAssetsIncluded,false);
+ assert.equal(ports.find(g=>g.id==='port-gta-vice-city-client').url,'https://joncodeofficial.github.io/gta-vice-city-wasm/');
+ const html=await(await fetch(h.base+'/arcade/q2.html')).text();assert.match(html,/original game is not included/i);
+ for(const file of ['index.wasm','game_baseq2.wasm','ref_soft.wasm','ref_gl1.wasm','ref_gles3.wasm']){const r=await fetch(h.base+'/arcade/'+file);assert.equal(r.status,200,file);assert.equal(r.headers.get('content-type'),'application/wasm');const bytes=await r.arrayBuffer();assert.equal(Buffer.from(bytes).subarray(0,4).toString('hex'),'0061736d');}
+ for(const file of ['q2-engine.js','index.data','q2-license.txt','q2-source.tar.gz','q2-gl4es-source.tar.gz'])assert.equal((await fetch(h.base+'/arcade/'+file,{method:'HEAD'})).status,200,file);
+ const script=await(await fetch(h.base+'/arcade/q2-launcher.js')).text();assert.doesNotMatch(script,/https?:\/\//);assert.match(script,/file\.arrayBuffer\(\)/);assert.doesNotMatch(script,/FormData|XMLHttpRequest|fetch\(/);
 });

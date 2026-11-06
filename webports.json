@@ -113,10 +113,15 @@
     {
       "id": "port-d2bb1bc89e64",
       "name": "Quake II",
-      "url": "https://rgc.zone/ports/Q2web/index.html",
-      "sourceUrl": null,
-      "host": "rgc.zone",
-      "featured": true
+      "url": "./q2.html",
+      "sourceUrl": "https://github.com/GMH-Code/Qwasm2",
+      "host": "Hosted on this site",
+      "featured": true,
+      "local": true,
+      "inlineOnly": true,
+      "clientLicense": "GPL-2.0",
+      "gameAssetsIncluded": false,
+      "requirements": "Browser engine hosted here. Requires your own Quake II pak0.pak (and optional pak1.pak/pak2.pak). Files stay in your browser; original game data is not included."
     },
     {
       "id": "port-baeccf5829a6",
