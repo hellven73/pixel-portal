@@ -4,11 +4,13 @@ import {readFile} from 'node:fs/promises';
 import {resolve,dirname,extname,sep} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHmac,timingSafeEqual} from 'node:crypto';
-import {server as wisp,logging} from '@mercuryworkshop/wisp-js/server';
+import {prepareWisp} from './wisp-compat.mjs';
 import {scramjetPath} from '@mercuryworkshop/scramjet/path';
 import {libcurlPath} from '@mercuryworkshop/libcurl-transport';
 import {baremuxPath} from '@mercuryworkshop/bare-mux/node';
 const root=dirname(fileURLToPath(import.meta.url)),epoxyPath=dirname(fileURLToPath(import.meta.resolve('@mercuryworkshop/epoxy-transport')));
+await prepareWisp();
+const {server:wisp,logging}=await import('@mercuryworkshop/wisp-js/server');
 export function verifyTicket(ticket,secret){try{if(!secret||typeof ticket!=='string'||ticket.length>1024)return false;const[payload,signature]=ticket.split('.');const expected=createHmac('sha256',secret).update(payload).digest();const actual=Buffer.from(signature||'','base64url');if(actual.length!==expected.length||!timingSafeEqual(actual,expected))return false;const data=JSON.parse(Buffer.from(payload,'base64url'));const now=Math.floor(Date.now()/1000);return Number.isSafeInteger(data.sub)&&Number.isSafeInteger(data.exp)&&data.exp>now&&data.exp<=now+3600;}catch{return false;}}
 export function createBrowserServer(options={}){
  const secret=options.secret??process.env.PROXY_SHARED_SECRET;if(!secret||secret.length<32)throw new Error('Set PROXY_SHARED_SECRET to a random value of at least 32 characters.');

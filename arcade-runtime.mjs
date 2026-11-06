@@ -1,5 +1,5 @@
 import {DatabaseSync} from 'node:sqlite';
-import {readFile,mkdir,access} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,access} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -18,6 +18,16 @@ async function prepare(){
   const {stdout}=await exec('tar',['-tzf',archive]);
   if(stdout.trim().split('\n').some(name=>!/^\.\/[\w.-]+$/.test(name)&&name!=='./'))throw Error('Invalid arcade bundle path.');
   await mkdir(runtime,{recursive:true});await exec('tar',['-xzf',archive,'-C',runtime,'--no-same-owner']);
+ }
+ const overrides=JSON.parse(await readFile(join(root,'arcade-overrides.json'),'utf8').catch(error=>{if(error.code==='ENOENT')return '{}';throw error;}));
+ for(const [name,content]of Object.entries(overrides.files||{})){
+  if(!['apps.js','scramjet-home.js'].includes(name)||!manifest.files.includes(name)||typeof content!=='string')throw Error('Invalid Arcade source override.');
+  await writeFile(join(directory,name),content);
+ }
+ for(const name of ['index.html','arcade.html']){
+  let html=await readFile(join(directory,name),'utf8');
+  for(const [before,after]of Object.entries(overrides.versions||{}))html=html.replaceAll(before,after);
+  await writeFile(join(directory,name),html);
  }
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
  return{directory,worker,files:new Set(manifest.files.filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};

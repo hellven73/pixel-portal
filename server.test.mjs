@@ -158,7 +158,7 @@ test('owned HTML pages include one current Google tag at the start of head',asyn
   assert.equal(response.status,path==='/not-a-real-page'?404:200,path);
   assert.equal((html.match(/src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-6Y3DXZJTDB"/g)||[]).length,1,path);
   assert.equal((html.match(/gtag\('config', 'G-6Y3DXZJTDB'\)/g)||[]).length,1,path);
-  assert.match(html,/<head\b[^>]*>\s*<!-- Google tag \(gtag\.js\) -->\s*<script async src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-6Y3DXZJTDB"/i,path);
+  assert.equal((html.match(/gtm\.js\?id=GTM-WR7WV87V/g)||[]).length,1,path);assert.match(html,/<head\b[^>]*>\s*<!-- Google Tag Manager -->/i,path);
   assert.ok(!html.includes('G-4QH6SB2N2D'),path);
  }
 });
@@ -195,4 +195,26 @@ test('Scramjet ad filtering blocks ad hosts before transport and can be disabled
  const enabled=new Transport({adblock:true});const blocked=await enabled.request(new URL('https://ads.doubleclick.net/ad'),'GET',null,{});assert.equal(blocked.status,204);assert.equal(blocked.body,null);assert.equal(enabled.calls,0);
  assert.equal((await enabled.request(new URL('https://web.cloudmoonapp.com/'),'GET',null,{})).status,200);assert.equal(enabled.calls,1);
  const disabled=new Transport({adblock:false});assert.equal((await disabled.request(new URL('https://ads.doubleclick.net/ad'),'GET',null,{})).status,200);assert.equal(disabled.calls,1);
+});
+
+test('Wisp opens dictionary-backed streams without crashing and keeps host and total caps',async()=>{
+ const entry=import.meta.resolve('@mercuryworkshop/wisp-js/server');
+ const {is_stream_allowed}=await import(new URL('../server/filter.mjs',entry));
+ const {close_reasons,stream_types}=await import(new URL('../packet.mjs',entry));
+ const proxy=createBrowserServer({secret:'regression-test-only-secret-at-least-32-characters'});
+ const streams=count=>Object.fromEntries(Array.from({length:count},(_,i)=>[i+1,{socket:{hostname:'regression.invalid'}}]));
+ assert.equal(await is_stream_allowed({streams:streams(1)},stream_types.TCP,'regression.invalid',443),0);
+ assert.equal(await is_stream_allowed({streams:streams(12)},stream_types.TCP,'regression.invalid',443),close_reasons.ConnThrottled);
+ assert.equal(await is_stream_allowed({streams:streams(32)},stream_types.TCP,'another.invalid',443),close_reasons.ConnThrottled);
+ assert.equal(await is_stream_allowed({streams:{}},stream_types.TCP,'127.0.0.1',443),close_reasons.HostBlocked);
+ proxy.close();
+});
+
+test('Google Tag Manager and Analytics remain singletons after repeated head injection',async()=>{
+ const {withGoogleTag}=await import('./analytics.mjs');
+ const supplied='<html><head><script async src="https://www.googletagmanager.com/gtm.js?id=GTM-WR7WV87V"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag(\'js\',new Date());</script></head><body></body></html>';
+ const html=withGoogleTag(withGoogleTag(supplied));
+ assert.equal((html.match(/gtm\.js\?id=GTM-WR7WV87V/g)||[]).length,1);
+ assert.equal((html.match(/gtag\/js\?id=G-6Y3DXZJTDB/g)||[]).length,1);
+ assert.equal((html.match(/gtag\('js'/g)||[]).length,1);
 });
