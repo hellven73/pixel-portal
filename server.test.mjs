@@ -218,3 +218,12 @@ test('Google Tag Manager and Analytics remain singletons after repeated head inj
  assert.equal((html.match(/gtag\/js\?id=G-6Y3DXZJTDB/g)||[]).length,1);
  assert.equal((html.match(/gtag\('js'/g)||[]).length,1);
 });
+
+test('Google account pages are not served through the proxy origin',async t=>{
+ const {isProxiedGoogleLogin}=await import('./proxy-auth.mjs');
+ assert.equal(isProxiedGoogleLogin('/service/'+encodeURIComponent('https://accounts.google.com/o/oauth2/v2/auth?client_id=example')),true);
+ assert.equal(isProxiedGoogleLogin('/service/'+encodeURIComponent('https://accounts.google.com.example.com/')),false);
+ const proxy=createBrowserServer({secret:'auth-guard-test-only-secret-32-characters'});proxy.listen(0,'127.0.0.1');await once(proxy,'listening');t.after(()=>new Promise(resolve=>proxy.close(resolve)));
+ const r=await fetch('http://127.0.0.1:'+proxy.address().port+'/service/'+encodeURIComponent('https://accounts.google.com/'));
+ assert.equal(r.status,409);const html=await r.text();assert.match(html,/No Google login page or password form/);assert.doesNotMatch(html,/<form|<input|http-equiv=.refresh/i);
+});

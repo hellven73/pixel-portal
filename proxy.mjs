@@ -1,4 +1,5 @@
 import {withGoogleTag} from './analytics.mjs';
+import {isProxiedGoogleLogin,googleLoginNotice} from './proxy-auth.mjs';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,dirname,extname,sep} from 'node:path';
@@ -18,7 +19,7 @@ export function createBrowserServer(options={}){
  const server=createServer(async(req,res)=>{
  res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');res.setHeader('Cross-Origin-Resource-Policy','cross-origin');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
  try{
- const url=new URL(req.url,'http://proxy.invalid');if(url.pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end('{"ok":true}');}
+ const url=new URL(req.url,'http://proxy.invalid');if(isProxiedGoogleLogin(url.pathname)){res.writeHead(409,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(googleLoginNotice);}if(url.pathname==='/health'){res.writeHead(200,{'Content-Type':'application/json'});return res.end('{"ok":true}');}
  if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end();}
  const paths=[['/scram/',scramjetPath],['/libcurl/',libcurlPath],['/epoxy/',epoxyPath],['/baremux/',baremuxPath]];let path=null;
  for(const[prefix,base]of paths)if(url.pathname.startsWith(prefix)){const file=resolve(base,decodeURIComponent(url.pathname.slice(prefix.length)));if(!file.startsWith(resolve(base)+sep)){res.writeHead(403);return res.end();}path=file;}

@@ -1,0 +1,4 @@
+export function isProxiedGoogleLogin(path){
+ try{if(!path.startsWith('/service/'))return false;const target=new URL(decodeURIComponent(path.slice('/service/'.length)));return target.hostname.toLowerCase().replace(/\.$/,'')==='accounts.google.com';}catch{return false;}
+}
+export const googleLoginNotice='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Google sign-in needs the official service</title></head><body style="font:16px system-ui;background:#111827;color:#edf2ff;padding:36px;line-height:1.7"><h1>Google sign-in is unavailable through this proxy</h1><p>No Google login page or password form has been loaded.</p><p>Close this window. To use Google sign-in, start the login from the game service’s official website in a normal browser window. That session may not transfer back to this embedded game.</p><p>Do not bypass a browser security warning.</p></body></html>';
