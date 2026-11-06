@@ -183,3 +183,16 @@ test('Scramjet tickets require sign-in and preserve the calling mirror origin',a
  const mirror=await post('/github-api/browser-ticket',{origin,token});assert.equal(mirror.status,200);const mirrorData=await mirror.json();assert.equal(verifyTicket(mirrorData.ticket,secret),true);assert.equal(JSON.parse(Buffer.from(mirrorData.ticket.split('.')[0],'base64url')).origin,origin);
  assert.equal((await post('/github-api/browser-ticket',{origin})).status,401);
 });
+
+test('Scramjet ad filtering blocks ad hosts before transport and can be disabled',async()=>{
+ const {isAdRequest}=await import('./ad-filter.mjs');
+ for(const url of ['https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js','https://ads.doubleclick.net/banner','https://ADNXS.COM./ad'])assert.equal(isAdRequest(url),true,url);
+ for(const url of ['https://web.cloudmoonapp.com/game/com.roblox.client/','https://accounts.google.com/','https://www.youtube.com/watch?v=1','https://notdoubleclick.net/','https://doubleclick.net.example.com/','https://example.com/?next=doubleclick.net','invalid'])assert.equal(isAdRequest(url),false,url);
+ const {readFile}=await import('node:fs/promises');let source=await readFile(new URL('./epoxy-adapter.mjs',import.meta.url),'utf8');
+ source=source.replace("import EpoxyTransport from '/epoxy/index.mjs';","class EpoxyTransport {constructor(options){this.calls=0;} async request(){this.calls++;return {status:200,headers:[['x-test','network']],body:null}}}");
+ source=source.replace("'/ad-filter.mjs'",JSON.stringify(new URL('./ad-filter.mjs',import.meta.url).href));
+ const {default:Transport}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+ const enabled=new Transport({adblock:true});const blocked=await enabled.request(new URL('https://ads.doubleclick.net/ad'),'GET',null,{});assert.equal(blocked.status,204);assert.equal(blocked.body,null);assert.equal(enabled.calls,0);
+ assert.equal((await enabled.request(new URL('https://web.cloudmoonapp.com/'),'GET',null,{})).status,200);assert.equal(enabled.calls,1);
+ const disabled=new Transport({adblock:false});assert.equal((await disabled.request(new URL('https://ads.doubleclick.net/ad'),'GET',null,{})).status,200);assert.equal(disabled.calls,1);
+});

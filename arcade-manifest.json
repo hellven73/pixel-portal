@@ -1,8 +1,9 @@
 {
   "source": "https://github.com/hellven73/pixel-arcade",
   "sourceCommit": "24df2de35ee1b4b9b86e1fbc88a8cdce3b401189",
-  "archiveSha256": "4e6592d7e33dbe4225d96f5b6f424337aea86ba089b7f4d92d90223205c42edf",
+  "archiveSha256": "6481823b1c74534299d1cbea55b484bdf89614be4c6e63df37c46b06be647b62",
   "files": [
+    ".q2-source.tar.gz.XeUvxV",
     ".slope-build.data.f3NRH3",
     "BACKEND.md",
     "README.md",

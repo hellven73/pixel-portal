@@ -20,7 +20,7 @@ export function createBrowserServer(options={}){
  if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end();}
  const paths=[['/scram/',scramjetPath],['/libcurl/',libcurlPath],['/epoxy/',epoxyPath],['/baremux/',baremuxPath]];let path=null;
  for(const[prefix,base]of paths)if(url.pathname.startsWith(prefix)){const file=resolve(base,decodeURIComponent(url.pathname.slice(prefix.length)));if(!file.startsWith(resolve(base)+sep)){res.writeHead(403);return res.end();}path=file;}
- if(['/','/browser.html'].includes(url.pathname))path=resolve(root,'browser.html');if(['/browser.js','/sw.js','/epoxy-adapter.mjs'].includes(url.pathname))path=resolve(root,url.pathname.slice(1));
+ if(['/','/browser.html'].includes(url.pathname))path=resolve(root,'browser.html');if(['/browser.js','/sw.js','/epoxy-adapter.mjs','/ad-filter.mjs'].includes(url.pathname))path=resolve(root,url.pathname.slice(1));
  if(!path){res.writeHead(404);return res.end('Not found');}
  let data=await readFile(path);
  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm','.json':'application/json','.map':'application/json'}[extname(path)]||'application/octet-stream';res.writeHead(200,{'Content-Type':mime,'Cache-Control':'no-store','Service-Worker-Allowed':'/'});res.end(req.method==='HEAD'?undefined:(mime.startsWith('text/html')?withGoogleTag(data.toString('utf8')):data));
