@@ -1,3 +1,5 @@
+import {registerCommands} from './discord-register.mjs';
+import {createDiscordBot} from './discord-bot.mjs';
 import {engagement} from './engagement-api.mjs';
 import {withGoogleTag} from './analytics.mjs';
 import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
@@ -53,6 +55,12 @@ export async function createPortal(options={}){
  function session(res,user,req){const token=randomBytes(32).toString('hex');statement('INSERT INTO sessions(hash,user_id,expires) VALUES(?,?,?)').run(sha(token),user.id,now()+7*86400000);const secure=process.env.COOKIE_SECURE==='1'||req.socket.encrypted;res.setHeader('Set-Cookie',`pixel_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800${secure?'; Secure':''}`);}
  function memberProfile(row){return{id:row.id,username:row.username,frame:row.frame,badge:row.badge,nameColor:row.name_color,profileEffect:row.profile_effect,plusActive:row.plus_until>now(),joinedAt:row.created_at,online:(activeUsers.get(row.id)||0)>now()-75000};}
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}
+ const botOptions=options.discord||{};
+ const release=JSON.parse(await readFile(join(arcade.directory,'new-games.json'),'utf8')),mobile=JSON.parse(await readFile(join(arcade.directory,'cloudmoon.json'),'utf8')),ports=JSON.parse(await readFile(join(root,'webports.json'),'utf8'));
+ const arrivals=()=>release.games.filter(e=>{const date=Date.parse(e.added+'T00:00:00Z');return date<=Date.now()&&Date.now()-date<(Number(release.recentDays)||30)*86400000}).map(e=>{const g=(e.type==='mobile'?mobile.games:ports.games).find(g=>g.id===e.id);return g?{id:e.type+':'+e.id,name:g.name}:null}).filter(Boolean);
+ const discord=createDiscordBot({db,publicKey:botOptions.publicKey??process.env.DISCORD_PUBLIC_KEY,applicationId:botOptions.applicationId??process.env.DISCORD_APPLICATION_ID,guildId:botOptions.guildId??process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN,announcementChannel:process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID,getGames:()=>[{id:'hextris',name:'Hextris'},{id:'original-21',name:'Slope'},...catalogue.games.filter(g=>g.source==='Featured embeds')],getArrivals:arrivals,flush:async()=>{if(cloud)await cloud.flushIfChanged(db,arcade.db)}});
+ if(discord.configured&&process.env.DISCORD_BOT_TOKEN)void registerCommands({applicationId:process.env.DISCORD_APPLICATION_ID,guildId:process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN}).then(()=>console.log('Discord commands ready.')).catch(()=>console.error('Discord command registration failed. Check app configuration.'));
+ const announcementTimer=setInterval(()=>discord.announce().catch(()=>console.error('Discord announcement check failed.')),600000);announcementTimer.unref();
  const server=createServer(async(req,res)=>{
   // Acknowledge account and playtime changes only after cloud persistence.
   if(cloud&&(req.url?.startsWith('/api/')||req.url?.startsWith('/arcade-api/')||req.url?.startsWith('/github-api/'))){
@@ -77,6 +85,12 @@ export async function createPortal(options={}){
  const url=new URL(req.url,'http://portal.invalid'),method=req.method,githubMirror=url.pathname.startsWith('/github-api/');
  if(githubMirror){if(req.headers.origin!==githubOrigin)fail(403,'This mirror origin is not allowed.');res.setHeader('Access-Control-Allow-Origin',githubOrigin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Methods','GET, POST, DELETE, PUT, PATCH, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization, X-Pixel-Client, X-Pixel-Dev-Token');if(method==='OPTIONS'){res.writeHead(204);return res.end();}}
  const path=githubMirror?'/arcade-api/'+url.pathname.slice('/github-api/'.length):url.pathname;
+ if(path==='/discord/interactions'){
+  if(method!=='POST')return json(res,405,{error:'Method not allowed.'});
+  const chunks=[];let bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>65536)fail(413,'Interaction too large.');chunks.push(chunk)}
+  const result=await discord.handle(Buffer.concat(chunks),req.headers);return json(res,result.status,result.body);
+ }
+
  if(path==='/ads.txt'&&['GET','HEAD'].includes(method)){
   res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'public, max-age=3600'});
   return res.end(method==='HEAD'?undefined:'google.com, pub-8632851454203675, DIRECT, f08c47fec0942fa0\n');
@@ -230,6 +244,6 @@ export async function createPortal(options={}){
   json(res,e.status||500,{error:e.status?e.message:'The server could not complete this request.'});if(!e.status)console.error('Portal request failed:',e.name);
  }
  });
- return{server,db,arcade,close:async()=>{clearInterval(sweep);await new Promise(resolve=>server.close(resolve));if(cloud){await cloud.flushIfChanged(db,arcade.db);await cloud.close();}arcade.close();db.close();}};
+ return{server,db,arcade,close:async()=>{clearInterval(sweep);clearInterval(announcementTimer);discord.stop();await new Promise(resolve=>server.close(resolve));if(cloud){await cloud.flushIfChanged(db,arcade.db);await cloud.close();}arcade.close();db.close();}};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const portal=await createPortal();const port=Number(process.env.PORT)||8080;portal.server.listen(port,'0.0.0.0',()=>console.log(`Pixel Portal listening on ${port}`));for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>portal.close().then(()=>process.exit(0)));}
