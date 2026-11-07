@@ -29,6 +29,14 @@ async function prepare(){
   for(const [before,after]of Object.entries(overrides.versions||{}))html=html.replaceAll(before,after);
   await writeFile(join(directory,name),html);
  }
+ let workerText=await readFile(join(directory,'backend-worker.mjs'),'utf8');
+ if(!workerText.includes("import {engagement} from '../engagement-api.mjs'")){
+  workerText="import {engagement} from '../engagement-api.mjs';\n"+workerText;
+  const marker='const fn=routes[endpoint]?.[request.method];';
+  if(!workerText.includes(marker))throw Error('Arcade engagement route marker missing.');
+  workerText=workerText.replace(marker,"if(endpoint==='/api/engagement')return engagement(request,{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json});\n"+marker);
+  await writeFile(join(directory,'backend-worker.mjs'),workerText);
+ }
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
  return{directory,worker,files:new Set(manifest.files.filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
 }

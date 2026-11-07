@@ -10,7 +10,7 @@
     "start": "node --env-file-if-exists=.env server.mjs",
     "dev": "node dev.mjs",
     "check": "node --check analytics.mjs && node --check remote-arcade.mjs && node --check github-transport.mjs && node --check github-api-client.js && node --check build-github-pages.mjs && node --check server.mjs && node --check proxy.mjs && node --check browser.js && node --check app.js && node --check services.js && node --check sw.js && node --check community.js && node --check webports-home.js && node --check epoxy-adapter.mjs && node --check arcade-runtime.mjs && node check-arcade.mjs",
-    "test": "node --test server.test.mjs arcade.test.mjs persistence.test.mjs",
+    "test": "node --test server.test.mjs arcade.test.mjs persistence.test.mjs engagement.test.mjs",
     "start:browser": "node --env-file-if-exists=.env proxy.mjs",
     "package:arcade": "node package-arcade.mjs",
     "build:pages": "node build-github-pages.mjs"
