@@ -25,3 +25,9 @@ test('progress works with the existing remote account service and the GitHub mir
  const r=await fetch(base+'/arcade-api/engagement?guest='+guest);assert.equal(r.status,200);assert.equal((await r.json()).guest,true);
  const token='a'.repeat(64),signed=await fetch(base+'/github-api/engagement?guest='+guest,{headers:{Origin:'https://hellven73.github.io',Authorization:'Bearer '+token}});assert.equal(signed.status,200);assert.equal((await signed.json()).guest,false);assert.equal(forwarded,0);
 });
+
+test('guest achievements and reports survive a remote-service frontend restart',async()=>{
+ const {createPortal}=await import('./server.mjs'),{once}=await import('node:events');let saved;
+ const start=async()=>{const app=await createPortal({cloudSnapshots:{snapshots:{portal:saved},flushIfChanged:async(db)=>{saved=Buffer.from(db.serialize())},close:async()=>{}},arcadeApiOrigin:'https://accounts.example',arcadeFetch:async()=>Response.json({authenticated:false},{status:401})});app.server.listen(0,'127.0.0.1');await once(app.server,'listening');const base='http://127.0.0.1:'+app.server.address().port;return{app,call:async body=>{const r=await fetch(base+'/arcade-api/engagement?guest='+guest,{method:body?'POST':'GET',headers:{Origin:base,'Content-Type':'application/json'},...(body?{body:JSON.stringify({guest,...body})}:{})});assert.equal(r.status,200);return r.json()}}};
+ const first=await start();await first.call({action:'tick',event:crypto.randomUUID(),mode:'play',seconds:0,game:'persisted',name:'Persisted game'});await first.call({action:'bug',id:crypto.randomUUID(),game:'persisted',body:'A test report kept after restart.'});await first.app.close();const second=await start();try{const data=await second.call();assert.equal(data.recent[0].game,'persisted');assert.equal(data.achievements[0].unlocked,true);}finally{await second.app.close()}
+});
