@@ -19,7 +19,7 @@ const sha=x=>createHash('sha256').update(x).digest('hex');
 const clean=(v,max=1000)=>typeof v==='string'?v.trim().slice(0,max):'';
 const publicUser=row=>row?{id:row.id,username:row.username,coins:row.coins,frame:row.frame,badge:row.badge,nameColor:row.name_color,profileEffect:row.profile_effect||null,plusUntil:row.plus_until||0}:null;
 export async function createPortal(options={}){
- const cloud=options.cloudSnapshots||(process.env.DATABASE_URL?await openCloudSnapshots(process.env.DATABASE_URL):null);
+ const cloud=options.cloudSnapshots||(process.env.DATABASE_URL?await openCloudSnapshots(process.env.DATABASE_URL):process.env.PROGRESS_DATABASE_URL?await openCloudSnapshots(process.env.PROGRESS_DATABASE_URL,{table:'pixel_progress_snapshots'}):null);
  const dbPath=cloud?':memory:':options.dbPath||process.env.DB_PATH||join(root,'data','portal.sqlite');
  if(dbPath!==':memory:')await mkdir(dirname(dbPath),{recursive:true});
  const db=new DatabaseSync(dbPath);

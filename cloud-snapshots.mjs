@@ -15,16 +15,17 @@ const serialize=db=>{
  return gzipSync(image);
 };
 
-export async function openCloudSnapshots(connectionString){
+export async function openCloudSnapshots(connectionString,{table='pixel_sqlite_snapshots'}={}){
+ if(!['pixel_sqlite_snapshots','pixel_progress_snapshots'].includes(table))throw Error('Invalid snapshot namespace.');
  const client=new Client({connectionString,connectionTimeoutMillis:12000,query_timeout:20000,application_name:'pixel-arcade'});
  await client.connect();
  try{
-  await client.query(`CREATE TABLE IF NOT EXISTS pixel_sqlite_snapshots(
+  await client.query(`CREATE TABLE IF NOT EXISTS ${table}(
     name TEXT PRIMARY KEY,
     image BYTEA NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
-  const {rows}=await client.query("SELECT name,image FROM pixel_sqlite_snapshots WHERE name IN ('portal','arcade')");
+  const {rows}=await client.query(`SELECT name,image FROM ${table} WHERE name IN ('portal','arcade')`);
   const snapshots={portal:null,arcade:null};
   for(const row of rows){
    const image=gunzipSync(row.image,{maxOutputLength:MAX_IMAGE_BYTES});
@@ -42,7 +43,7 @@ export async function openCloudSnapshots(connectionString){
     await client.query('BEGIN');
     try{
      for(const [name,image] of entries){
-      await client.query(`INSERT INTO pixel_sqlite_snapshots(name,image,updated_at)
+      await client.query(`INSERT INTO ${table}(name,image,updated_at)
        VALUES($1,$2,NOW()) ON CONFLICT(name) DO UPDATE SET image=EXCLUDED.image,updated_at=NOW()`,[name,image]);
      }
      await client.query('COMMIT');
