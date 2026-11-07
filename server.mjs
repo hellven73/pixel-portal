@@ -60,6 +60,7 @@ export async function createPortal(options={}){
  const arrivals=()=>release.games.filter(e=>{const date=Date.parse(e.added+'T00:00:00Z');return date<=Date.now()&&Date.now()-date<(Number(release.recentDays)||30)*86400000}).map(e=>{const g=(e.type==='mobile'?mobile.games:ports.games).find(g=>g.id===e.id);return g?{id:e.type+':'+e.id,name:g.name}:null}).filter(Boolean);
  const discord=createDiscordBot({db,publicKey:botOptions.publicKey??process.env.DISCORD_PUBLIC_KEY,applicationId:botOptions.applicationId??process.env.DISCORD_APPLICATION_ID,guildId:botOptions.guildId??process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN,announcementChannel:process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID,getGames:()=>[{id:'hextris',name:'Hextris'},{id:'original-21',name:'Slope'},...catalogue.games.filter(g=>g.source==='Featured embeds')],getArrivals:arrivals,flush:async()=>{if(cloud)await cloud.flushIfChanged(db,arcade.db)}});
  if(discord.configured&&process.env.DISCORD_BOT_TOKEN)void registerCommands({applicationId:process.env.DISCORD_APPLICATION_ID,guildId:process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN}).then(()=>console.log('Discord commands ready.')).catch(()=>console.error('Discord command registration failed. Check app configuration.'));
+ if(discord.configured&&process.env.DISCORD_BOT_TOKEN)void discord.setupChannel().catch(()=>console.error('Discord announcement channel needs setup. Use /setup-announcements after installing the bot.'));
  const announcementTimer=setInterval(()=>discord.announce().catch(()=>console.error('Discord announcement check failed.')),600000);announcementTimer.unref();
  const server=createServer(async(req,res)=>{
   // Acknowledge account and playtime changes only after cloud persistence.
@@ -88,7 +89,7 @@ export async function createPortal(options={}){
  if(path==='/discord/interactions'){
   if(method!=='POST')return json(res,405,{error:'Method not allowed.'});
   const chunks=[];let bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>65536)fail(413,'Interaction too large.');chunks.push(chunk)}
-  const result=await discord.handle(Buffer.concat(chunks),req.headers);return json(res,result.status,result.body);
+  const result=await discord.handle(Buffer.concat(chunks),req.headers);json(res,result.status,result.body);if(result.after)void result.after().catch(()=>console.error('Discord setup response failed.'));return;
  }
 
  if(path==='/ads.txt'&&['GET','HEAD'].includes(method)){
