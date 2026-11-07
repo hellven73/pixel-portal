@@ -1,3 +1,4 @@
+import {engagement} from './engagement-api.mjs';
 import {withGoogleTag} from './analytics.mjs';
 import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
 import {createServer} from 'node:http';
@@ -89,7 +90,7 @@ export async function createPortal(options={}){
  }
  if(path.startsWith('/arcade-api/')){
   if(['/arcade-api/party','/arcade-api/challenges'].includes(path))return json(res,410,{error:'This game has been removed.'});
-  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!cloud&&!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':cloud?'neon-backed-sqlite':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0'});
+  if(path==='/arcade-api/status'&&method==='GET')return json(res,200,{ok:true,ephemeralStorage:!cloud&&!arcadeApiOrigin&&process.env.STORAGE_MODE==='ephemeral',storage:arcadeApiOrigin?'existing-database':cloud?'neon-backed-sqlite':'local',adminConfigured:Boolean(process.env.PIXEL_ADMIN_USERNAME),version:'3.0.0',progressStorage:cloud?'durable':'local'});
   if(!githubMirror)csrf(req);limit(`arcade:${req.socket.remoteAddress}`,360);const chunks=[];let length=0;
   for await(const chunk of req){length+=chunk.length;if(length>98304)fail(413,'This request is too large.');chunks.push(chunk);}
   // The administrator username is reserved against public registration.
@@ -111,7 +112,13 @@ export async function createPortal(options={}){
    const {username}=profileData;const sub=parseInt(sha(username).slice(0,12),16),payload=Buffer.from(JSON.stringify({sub,exp:Math.floor(now()/1000)+600,origin:githubMirror?githubOrigin:origin})).toString('base64url'),signature=createHmac('sha256',config.proxySecret).update(payload).digest('base64url');
    return json(res,200,{origin:config.proxyOrigin,ticket:`${payload}.${signature}`});
   }
-  let response=await arcade.fetch(request);if(githubMirror)response=await githubResponse(response,path,Buffer.concat(chunks));res.writeHead(response.status,Object.fromEntries(response.headers));return res.end(Buffer.from(await response.arrayBuffer()));
+  let response;
+  if(path==='/arcade-api/engagement'&&arcadeApiOrigin){
+   function sql(query,args=[]){const q=db.prepare(query);return{bind:(...values)=>sql(query,values),first:async()=>q.get(...args)||null,all:async()=>({results:q.all(...args)}),run:async()=>q.run(...args),execute:()=>q.run(...args)}}
+   const DB={prepare:sql,batch:async statements=>transaction(()=>statements.map(q=>q.execute()))};
+   let verified;const account=async()=>{if(verified!==undefined)return verified;const r=await arcade.fetch(new Request(origin+'/api/profile',{headers}));if(r.status===401)return verified=null;if(!r.ok)throw Error('Account service unavailable.');const p=await r.json();return verified=p.authenticated===true&&typeof p.username==='string'?{userId:p.username,username:p.username,isAdmin:p.isAdmin===true}:null};
+   response=await engagement(request,{DB,getAccount:account,sameOrigin:r=>r.headers.get('origin')===new URL(r.url).origin,isAdmin:u=>u?.isAdmin===true,limited:async(_r,action,owner)=>{limit('progress:'+action+':'+owner,240,900000);return false},json:(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}})});
+  }else response=await arcade.fetch(request);if(githubMirror)response=await githubResponse(response,path,Buffer.concat(chunks));res.writeHead(response.status,Object.fromEntries(response.headers));return res.end(Buffer.from(await response.arrayBuffer()));
  }
  if(path==='/'||path==='/arcade'||path.startsWith('/arcade/')){
   if(!['GET','HEAD'].includes(method))fail(405,'Method not allowed.');

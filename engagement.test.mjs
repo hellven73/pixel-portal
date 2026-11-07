@@ -17,3 +17,11 @@ test('guest progress persists, ticks are bounded and replay safe, reports aggreg
  app.db.prepare('UPDATE engagement_totals SET last=?').run(Date.now()-16000);await call({...tick,event:crypto.randomUUID(),mode:'browse',seconds:15});const after=await(await call()).json();assert.ok(after.totals.browse>=14);assert.equal(after.totals.play,data.totals.play);
  const bad=await app.fetch(new Request('http://localhost/api/engagement',{method:'POST',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:JSON.stringify({guest,...tick})}));assert.equal(bad.status,403);
 });
+
+test('progress works with the existing remote account service and the GitHub mirror',async t=>{
+ const {createPortal}=await import('./server.mjs');const {once}=await import('node:events');let forwarded=0;
+ const app=await createPortal({dbPath:':memory:',arcadeApiOrigin:'https://accounts.example',arcadeFetch:async(url,options)=>{if(new URL(url).pathname!=='/api/profile'){forwarded++;return Response.json({error:'Not found'},{status:404})}return options.headers.get('Authorization')?Response.json({authenticated:true,username:'player',isAdmin:false}):Response.json({authenticated:false},{status:401})}});
+ app.server.listen(0,'127.0.0.1');await once(app.server,'listening');t.after(()=>app.close());const base='http://127.0.0.1:'+app.server.address().port;
+ const r=await fetch(base+'/arcade-api/engagement?guest='+guest);assert.equal(r.status,200);assert.equal((await r.json()).guest,true);
+ const token='a'.repeat(64),signed=await fetch(base+'/github-api/engagement?guest='+guest,{headers:{Origin:'https://hellven73.github.io',Authorization:'Bearer '+token}});assert.equal(signed.status,200);assert.equal((await signed.json()).guest,false);assert.equal(forwarded,0);
+});
