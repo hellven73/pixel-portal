@@ -21,7 +21,7 @@ async function prepare(){
  }
  const overrides=JSON.parse(await readFile(join(root,'arcade-overrides.json'),'utf8').catch(error=>{if(error.code==='ENOENT')return '{}';throw error;}));
  for(const [name,content]of Object.entries(overrides.files||{})){
-  if(!['apps.js','scramjet-home.js'].includes(name)||!manifest.files.includes(name)||typeof content!=='string')throw Error('Invalid Arcade source override.');
+  if(!['apps.js','scramjet-home.js','hub.js'].includes(name)||!manifest.files.includes(name)||typeof content!=='string')throw Error('Invalid Arcade source override.');
   await writeFile(join(directory,name),content);
  }
  for(const name of ['index.html','arcade.html']){
@@ -34,9 +34,11 @@ async function prepare(){
   workerText="import {engagement} from '../engagement-api.mjs';\n"+workerText;
   const marker='const fn=routes[endpoint]?.[request.method];';
   if(!workerText.includes(marker))throw Error('Arcade engagement route marker missing.');
-  workerText=workerText.replace(marker,"if(endpoint==='/api/engagement')return engagement(request,{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json});\n"+marker);
+  workerText=workerText.replace(marker,"if(endpoint==='/api/engagement')return engagement(request,{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json,getFriends:async(_req,u)=>(await env.DB.prepare(\"SELECT a.username FROM friendships f JOIN arcade_accounts a ON a.user_id=CASE WHEN f.sender=? THEN f.receiver ELSE f.sender END WHERE (f.sender=? OR f.receiver=?) AND f.status='accepted'\").bind(u.userId,u.userId,u.userId).all()).results.map(r=>r.username)});\n"+marker);
   await writeFile(join(directory,'backend-worker.mjs'),workerText);
  }
+ workerText=workerText.replace('{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json}',"{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json,getFriends:async(_req,u)=>(await env.DB.prepare(\"SELECT a.username FROM friendships f JOIN arcade_accounts a ON a.user_id=CASE WHEN f.sender=? THEN f.receiver ELSE f.sender END WHERE (f.sender=? OR f.receiver=?) AND f.status='accepted'\").bind(u.userId,u.userId,u.userId).all()).results.map(r=>r.username)}");
+ await writeFile(join(directory,'backend-worker.mjs'),workerText);
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
  return{directory,worker,files:new Set(manifest.files.filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
 }
