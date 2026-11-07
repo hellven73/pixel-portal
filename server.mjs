@@ -1,5 +1,5 @@
 import {registerCommands} from './discord-register.mjs';
-import {createDiscordBot} from './discord-bot.mjs';
+import {createDiscordHub} from './discord-bot.mjs';
 import {engagement} from './engagement-api.mjs';
 import {withGoogleTag} from './analytics.mjs';
 import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
@@ -58,7 +58,7 @@ export async function createPortal(options={}){
  const botOptions=options.discord||{};
  const release=JSON.parse(await readFile(join(arcade.directory,'new-games.json'),'utf8')),mobile=JSON.parse(await readFile(join(arcade.directory,'cloudmoon.json'),'utf8')),ports=JSON.parse(await readFile(join(root,'webports.json'),'utf8'));
  const arrivals=()=>release.games.filter(e=>{const date=Date.parse(e.added+'T00:00:00Z');return date<=Date.now()&&Date.now()-date<(Number(release.recentDays)||30)*86400000}).map(e=>{const g=(e.type==='mobile'?mobile.games:ports.games).find(g=>g.id===e.id);return g?{id:e.type+':'+e.id,name:g.name}:null}).filter(Boolean);
- const discord=createDiscordBot({db,publicKey:botOptions.publicKey??process.env.DISCORD_PUBLIC_KEY,applicationId:botOptions.applicationId??process.env.DISCORD_APPLICATION_ID,guildId:botOptions.guildId??process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN,announcementChannel:process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID,getGames:()=>[{id:'hextris',name:'Hextris'},{id:'original-21',name:'Slope'},...catalogue.games.filter(g=>g.source==='Featured embeds')],getArrivals:arrivals,flush:async()=>{if(cloud)await cloud.flushIfChanged(db,arcade.db)}});
+ const discord=createDiscordHub({db,publicKey:botOptions.publicKey??process.env.DISCORD_PUBLIC_KEY,applicationId:botOptions.applicationId??process.env.DISCORD_APPLICATION_ID,guildId:botOptions.guildId??process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN,announcementChannel:process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID,getGames:()=>[{id:'hextris',name:'Hextris'},{id:'original-21',name:'Slope'},...catalogue.games.filter(g=>g.source==='Featured embeds')],getArrivals:arrivals,flush:async()=>{if(cloud)await cloud.flushIfChanged(db,arcade.db)}});
  if(discord.configured&&process.env.DISCORD_BOT_TOKEN)void registerCommands({applicationId:process.env.DISCORD_APPLICATION_ID,guildId:process.env.DISCORD_GUILD_ID,token:process.env.DISCORD_BOT_TOKEN}).then(()=>console.log('Discord commands ready.')).catch(()=>console.error('Discord command registration failed. Check app configuration.'));
  if(discord.configured&&process.env.DISCORD_BOT_TOKEN)void discord.setupChannel().catch(()=>console.error('Discord announcement channel needs setup. Use /setup-announcements after installing the bot.'));
  const announcementTimer=setInterval(()=>discord.announce().catch(()=>console.error('Discord announcement check failed.')),600000);announcementTimer.unref();
