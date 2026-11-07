@@ -53,3 +53,11 @@ test('XP and levels derive from saved activity; profile badges expose only progr
  const publicData=await(await app.fetch(new Request('http://localhost/api/engagement?profile=levelplayer'))).json();assert.deepEqual(Object.keys(publicData),['progression']);assert.equal(publicData.progression.achievements,1);assert.equal(publicData.progression.xp,100);
  await req({action:'claim',achievement:'first'});await req({action:'claim',achievement:'first'});assert.equal((await(await req()).json()).progression.xp,100);
 });
+
+test('background account restore deduplicates requests and preserves identity through temporary failures',async()=>{
+ const {readFile}=await import('node:fs/promises'),{runInNewContext}=await import('node:vm');const {files}=JSON.parse(await readFile(new URL('./arcade-overrides.json',import.meta.url),'utf8'));const source=files['hub.js'].slice(files['hub.js'].indexOf('let accountRequest='),files['hub.js'].indexOf('let accountMode='));let calls=0,resolve,response,button={},timers=[];
+ const context={request:()=>{calls++;return new Promise(r=>resolve=r)},window:{addEventListener(){}},document:{hidden:false,addEventListener(){},dispatchEvent(){}},navigator:{onLine:true},CustomEvent:class{},$:()=>button,setTimeout:(fn)=>{timers.push(fn);return timers.length},clearTimeout(){},Date,accountLoaded:false,authenticated:false,profile:null,accountView(){}};runInNewContext(source+';globalThis.load=loadAccount;globalThis.refresh=refreshSavedSession;',context);
+ const a=context.load(),b=context.load();assert.equal(a,b);assert.equal(calls,1);resolve({authenticated:true,username:'player',profile:{name:'Player'},isAdmin:false});await a;assert.equal(context.window.pixelAccountUsername,'player');context.refresh();assert.equal(calls,1);
+ context.request=async()=>{throw Object.assign(Error('Temporary outage'),{status:502})};await assert.rejects(context.load());assert.equal(context.window.pixelAccountUsername,'player');assert.equal(context.authenticated,true);assert.equal(timers.length,1);
+ context.request=async()=>{throw Object.assign(Error('Expired'),{status:401})};await context.load();assert.equal(context.window.pixelAccountUsername,null);assert.equal(context.authenticated,false);
+});
