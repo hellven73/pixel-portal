@@ -1,7 +1,14 @@
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export const achievements=[{id:'first',name:'First launch',goal:1,metric:'games',reward:'New Challenger'},{id:'explorer',name:'Variety I',goal:5,metric:'qualified',reward:'Game Explorer'},{id:'variety2',name:'Variety II',goal:10,metric:'qualified',reward:'Genre Hopper'},{id:'variety3',name:'Variety III',goal:25,metric:'qualified',reward:'Arcade Connoisseur'},{id:'regular',name:'Playtime I',goal:3600,metric:'play',reward:'Arcade Regular'},{id:'marathon',name:'Playtime II',goal:18000,metric:'play',reward:'Dedicated Player'},{id:'play3',name:'Playtime III',goal:72000,metric:'play',reward:'Pixel Veteran'},{id:'curious',name:'Around the arcade',goal:1800,metric:'browse',reward:'Curious Mind'}];
+export function progression(m){
+ const unlocked=achievements.filter(a=>(m[a.metric]||0)>=a.goal).length;
+ const xp=Math.floor((m.play||0)/60)*10+Math.floor((m.browse||0)/300)*5+(m.qualified||0)*50+unlocked*100;
+ const level=Math.floor(Math.sqrt(xp/100))+1,start=100*(level-1)**2,next=100*level**2;
+ return {xp,level,start,next,earned:xp-start,needed:next-start,achievements:unlocked,totalAchievements:achievements.length};
+}
 export async function engagement(req,{DB,getAccount,sameOrigin,isAdmin,limited,json,getFriends=async()=>[]}){
  for(const sql of [
+ 'CREATE TABLE IF NOT EXISTS player_directory(owner TEXT PRIMARY KEY,username TEXT UNIQUE)',
  'CREATE TABLE IF NOT EXISTS player_activity(owner TEXT PRIMARY KEY,username TEXT,mode TEXT,game TEXT,updated REAL)',
  "CREATE TABLE IF NOT EXISTS player_preferences(owner TEXT PRIMARY KEY,sharing INTEGER NOT NULL DEFAULT 0,title TEXT NOT NULL DEFAULT '')",
  'CREATE TABLE IF NOT EXISTS achievement_claims(owner TEXT,achievement TEXT,created REAL,PRIMARY KEY(owner,achievement))',
@@ -13,6 +20,15 @@ export async function engagement(req,{DB,getAccount,sameOrigin,isAdmin,limited,j
  'CREATE TABLE IF NOT EXISTS game_health(owner TEXT,game TEXT,name TEXT,status TEXT,updated REAL,PRIMARY KEY(owner,game))',
  'CREATE TABLE IF NOT EXISTS game_bug_reports(id TEXT PRIMARY KEY,owner TEXT,game TEXT,name TEXT,body TEXT,created REAL)'])await DB.prepare(sql).run();
  const u=await getAccount(req),url=new URL(req.url),b=req.method==='POST'?await req.json().catch(()=>null):null,guest=b?.guest||url.searchParams.get('guest');
+ if(u)await DB.prepare('INSERT INTO player_directory(owner,username) VALUES(?,?) ON CONFLICT(owner) DO UPDATE SET username=excluded.username').bind('user:'+u.userId,u.username).run();
+ if(req.method==='GET'&&url.searchParams.has('profile')){
+  const name=url.searchParams.get('profile');if(!/^[\w.-]{2,40}$/.test(name))return json({error:'Invalid player.'},400);
+  const row=await DB.prepare('SELECT owner FROM player_directory WHERE username=? COLLATE NOCASE').bind(name).first();
+  if(!row)return json({progression:progression({})});
+  const totals=await DB.prepare('SELECT play,browse FROM engagement_totals WHERE owner=?').bind(row.owner).first()||{};
+  const games=await DB.prepare('SELECT COUNT(*) AS games,SUM(CASE WHEN seconds>=60 THEN 1 ELSE 0 END) AS qualified FROM engagement_recent WHERE owner=?').bind(row.owner).first();
+  return json({progression:progression({...totals,...games})});
+ }
  if(!u&&!uuid.test(guest||''))return json({error:'A browser guest identifier is required.'},400);
  const owner=u?'user:'+u.userId:'guest:'+guest;
  const gameValid=g=>typeof g==='string'&&/^[\w.:/-]{1,160}$/.test(g);
@@ -25,7 +41,7 @@ export async function engagement(req,{DB,getAccount,sameOrigin,isAdmin,limited,j
   if(url.searchParams.has('health'))return json({votes:(await DB.prepare('SELECT game,status,COUNT(*) AS count,MAX(updated) AS updated FROM game_health WHERE updated>? GROUP BY game,status').bind(Date.now()-30*86400000).all()).results});
   if(url.searchParams.has('game')){const game=url.searchParams.get('game');if(!gameValid(game))return json({error:'Invalid game.'},400);const votes=(await DB.prepare('SELECT status,COUNT(*) AS count,MAX(updated) AS updated FROM game_health WHERE game=? AND updated>? GROUP BY status').bind(game,Date.now()-30*86400000).all()).results;return json({votes});}
   await DB.prepare('INSERT OR IGNORE INTO engagement_totals(owner,last) VALUES(?,?)').bind(owner,Date.now()).run();
-  const totals=await DB.prepare('SELECT play,browse FROM engagement_totals WHERE owner=?').bind(owner).first()||{play:0,browse:0};const recent=(await DB.prepare('SELECT game,name,seconds,played FROM engagement_recent WHERE owner=? ORDER BY played DESC LIMIT 12').bind(owner).all()).results;const n=await DB.prepare('SELECT COUNT(*) AS count FROM engagement_recent WHERE owner=?').bind(owner).first();const m=await metrics(),prefs=await DB.prepare('SELECT sharing,title FROM player_preferences WHERE owner=?').bind(owner).first()||{sharing:0,title:''},claims=(await DB.prepare('SELECT achievement FROM achievement_claims WHERE owner=?').bind(owner).all()).results.map(r=>r.achievement);return json({totals,recent,history:(await DB.prepare('SELECT game,seconds,played FROM engagement_recent WHERE owner=? ORDER BY seconds DESC LIMIT 500').bind(owner).all()).results,gamesPlayed:n.count,qualifiedGames:m.qualified,preferences:prefs,guest:!u,achievements:achievements.map(a=>({...a,progress:Math.min(a.goal,m[a.metric]),unlocked:m[a.metric]>=a.goal,claimed:claims.includes(a.id)}))});
+  const totals=await DB.prepare('SELECT play,browse FROM engagement_totals WHERE owner=?').bind(owner).first()||{play:0,browse:0};const recent=(await DB.prepare('SELECT game,name,seconds,played FROM engagement_recent WHERE owner=? ORDER BY played DESC LIMIT 12').bind(owner).all()).results;const n=await DB.prepare('SELECT COUNT(*) AS count FROM engagement_recent WHERE owner=?').bind(owner).first();const m=await metrics(),prefs=await DB.prepare('SELECT sharing,title FROM player_preferences WHERE owner=?').bind(owner).first()||{sharing:0,title:''},claims=(await DB.prepare('SELECT achievement FROM achievement_claims WHERE owner=?').bind(owner).all()).results.map(r=>r.achievement);return json({progression:progression(m),totals,recent,history:(await DB.prepare('SELECT game,seconds,played FROM engagement_recent WHERE owner=? ORDER BY seconds DESC LIMIT 500').bind(owner).all()).results,gamesPlayed:n.count,qualifiedGames:m.qualified,preferences:prefs,guest:!u,achievements:achievements.map(a=>({...a,progress:Math.min(a.goal,m[a.metric]),unlocked:m[a.metric]>=a.goal,claimed:claims.includes(a.id)}))});
  }
  if(req.method!=='POST')return json({error:'Method not allowed.'},405);
  if(!sameOrigin(req))return json({error:'Invalid origin.'},403);
