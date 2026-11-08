@@ -4,7 +4,7 @@
 import pg from 'pg';
 import {gzipSync,gunzipSync} from 'node:zlib';
 
-const {Client}=pg;
+const {Pool}=pg;
 const MAX_IMAGE_BYTES=32*1024*1024;
 const getChanges=db=>db?Number(db.prepare('SELECT total_changes() AS count').get().count):null;
 const serialize=db=>{
@@ -15,10 +15,10 @@ const serialize=db=>{
  return gzipSync(image);
 };
 
-export async function openCloudSnapshots(connectionString,{table='pixel_sqlite_snapshots'}={}){
+export async function openCloudSnapshots(connectionString,{table='pixel_sqlite_snapshots',poolFactory=config=>new Pool(config)}={}){
  if(!['pixel_sqlite_snapshots','pixel_progress_snapshots'].includes(table))throw Error('Invalid snapshot namespace.');
- const client=new Client({connectionString,connectionTimeoutMillis:12000,query_timeout:20000,application_name:'pixel-arcade'});
- await client.connect();
+ const client=poolFactory({connectionString,max:1,idleTimeoutMillis:10000,connectionTimeoutMillis:12000,query_timeout:20000,application_name:'pixel-arcade'});
+ client.on('error',error=>console.error('Cloud database connection interrupted:',error.name));
  try{
   await client.query(`CREATE TABLE IF NOT EXISTS ${table}(
     name TEXT PRIMARY KEY,
@@ -32,27 +32,25 @@ export async function openCloudSnapshots(connectionString,{table='pixel_sqlite_s
    if(image.subarray(0,16).toString('utf8')!=='SQLite format 3\0')throw Error('Cloud SQLite snapshot is invalid.');
    snapshots[row.name]=image;
   }
-  let last={portal:null,arcade:null},tail=Promise.resolve(),failed=null;
+  let last={portal:null,arcade:null},tail=Promise.resolve();
   async function flushIfChanged(portal,arcade){
-   if(failed)throw failed;
    const current={portal:getChanges(portal),arcade:getChanges(arcade)};
    if(current.portal===last.portal&&current.arcade===last.arcade)return tail;
    const entries=[['portal',serialize(portal)],['arcade',serialize(arcade)]].filter(([,image])=>image);
-   last=current;
-   tail=tail.then(async()=>{
-    await client.query('BEGIN');
-    try{
+   tail=tail.catch(()=>{}).then(async()=>{
+    const connection=await client.connect();
+    try{await connection.query('BEGIN');
      for(const [name,image] of entries){
-      await client.query(`INSERT INTO ${table}(name,image,updated_at)
+      await connection.query(`INSERT INTO ${table}(name,image,updated_at)
        VALUES($1,$2,NOW()) ON CONFLICT(name) DO UPDATE SET image=EXCLUDED.image,updated_at=NOW()`,[name,image]);
      }
-     await client.query('COMMIT');
+     await connection.query('COMMIT');last=current;
     }catch(error){
-     try{await client.query('ROLLBACK')}catch{}
-     throw error;
-    }
+     try{await connection.query('ROLLBACK')}catch{}
+     last={portal:null,arcade:null};throw error;
+    }finally{connection.release()}
    });
-   try{await tail}catch(error){failed=error;throw error}
+   await tail
   }
   async function close(){try{await tail}catch{}await client.end()}
   return{snapshots,flushIfChanged,close};

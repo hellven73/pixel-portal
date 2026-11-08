@@ -1,5 +1,6 @@
 import {createPublicKey,verify,createHash,randomUUID} from 'node:crypto';
 const site='https://pixelarcade.com.au/arcade/';
+const mirror='https://hellven73.github.io/pixel/arcade/';
 export const commands=[
  {name:'game',description:'Find your next game on Pixel Arcade',options:[{type:3,name:'name',description:'Search for a game (leave empty for a suggestion)',max_length:80}]},
  {name:'request-game',description:'Suggest a game for Pixel Arcade',options:[{type:3,name:'title',description:'Game title',required:true,min_length:2,max_length:80},{type:3,name:'note',description:'Why would you like it?',max_length:400}]},
@@ -8,7 +9,7 @@ export const commands=[
  {name:'setup-announcements',description:'Create or connect the Pixel Arcade updates channel',default_member_permissions:null}
 ].map(c=>({...c,type:1,contexts:[0],integration_types:[0]}));
 const clean=s=>String(s||'').replace(/[@`*_~<>\\]/g,'').trim();
-const message=(description,{title='Pixel Arcade',url=site+'#home',button='Visit Pixel Arcade',privateReply=false}={})=>({type:4,data:{...(privateReply?{flags:64}:{}),allowed_mentions:{parse:[]},embeds:[{title,description,color:0xAA92F4}],components:[{type:1,components:[{type:2,style:5,label:button,url}]}]}});
+const message=(description,{title='Pixel Arcade',url=site+'#home',button='Visit Pixel Arcade',privateReply=false}={})=>({type:4,data:{...(privateReply?{flags:64}:{}),allowed_mentions:{parse:[]},embeds:[{title,description,color:0xAA92F4}],components:[{type:1,components:[{type:2,style:5,label:button,url},{type:2,style:5,label:'GitHub mirror',url:mirror}]}]}});
 export function verifyInteraction(raw,signature,timestamp,key,now=Date.now()){
  if(!/^[a-f\d]{128}$/i.test(signature||'')||!/^\d{10,11}$/.test(timestamp||'')||!/^[a-f\d]{64}$/i.test(key||'')||Math.abs(now/1000-Number(timestamp))>300)return false;
  try{return verify(null,Buffer.concat([Buffer.from(timestamp),raw]),createPublicKey({key:Buffer.concat([Buffer.from('302a300506032b6570032100','hex'),Buffer.from(key,'hex')]),format:'der',type:'spki'}),Buffer.from(signature,'hex'))}catch{return false}
@@ -22,7 +23,7 @@ export function createDiscordBot({db,publicKey,applicationId,guildId,ownerId='',
  let checking=false,stopped=false;const configured=!!publicKey&&!!applicationId&&!!guildId;
  const getState=key=>db.prepare('SELECT value FROM discord_bot_state WHERE key=?').get(key+':'+guildId)?.value;
  const setState=(key,value)=>db.prepare('INSERT INTO discord_bot_state VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key+':'+guildId,String(value));
- function guide(){return message('**Start here:** '+site+'\n\n**/game** — Search for a game or get a suggestion.\n**/request-game** — Suggest a game for the website.\n**/new-games** — See recent additions.\n**/guide** — Show this guide.\n\nPlay, earn XP and unlock achievements. Sign in to sync progress and claim reward titles. Guests keep progress in their browser. Use Friends & DMs to connect; activity sharing is optional.\n\nIn game controls, use Report bug or Update status when something breaks. Some games need separate accounts or your own game files. Only the bot owner can configure announcements.',{title:'Pixel Arcade · Start here',button:'Open Pixel Arcade'})}
+ function guide(){return message('**Start here:** '+site+'\n**Alternative address:** '+mirror+'\nNetwork restrictions still apply.\n\n**/game** — Search for a game or get a suggestion.\n**/request-game** — Suggest a game for the website.\n**/new-games** — See recent additions.\n**/guide** — Show this guide.\n\nPlay, earn XP and unlock achievements. Sign in to sync progress and claim reward titles. Guests keep progress in their browser. Use Friends & DMs to connect; activity sharing is optional.\n\nIn game controls, use Report bug or Update status when something breaks. Some games need separate accounts or your own game files. Only the bot owner can configure announcements.',{title:'Pixel Arcade · Start here',button:'Open Pixel Arcade'})}
  async function postGuide(channel){if(getState('guide:'+channel)||!token)return;const r=await fetcher('https://discord.com/api/v10/channels/'+channel+'/messages',{method:'POST',headers:{Authorization:'Bot '+token,'Content-Type':'application/json'},body:JSON.stringify({...guide().data,nonce:createHash('sha256').update('guide:'+guildId+':'+channel).digest('hex').slice(0,24),enforce_nonce:true}),signal:AbortSignal.timeout(5000)});if(!r.ok)throw Error('Channel connected, but the guide could not be posted. Check Send Messages and Embed Links permissions.');setState('guide:'+channel,1);await flush()}
  let channelSetup=null;
  function setupChannel(){if(channelSetup)return channelSetup;const task=(async()=>{
@@ -103,6 +104,9 @@ export function createDiscordHub(options){
   let i;try{i=JSON.parse(raw)}catch{return{status:400,body:{error:'Invalid interaction.'}}}if(i.application_id!==applicationId)return{status:401,body:{error:'Wrong application.'}};if(i.type===1)return{status:200,body:{type:1}};
   if(!/^\d{16,22}$/.test(i.guild_id||'')||i.member?.user?.bot)return{status:403,body:message('Use this bot in a server where it is installed.',{privateReply:true})};
   const authorized=i.authorizing_integration_owners?.['0'];if(authorized&&authorized!==i.guild_id)return{status:403,body:{error:'Wrong installation context.'}};
-  return bot(i.guild_id).handle(raw,headers);
+  if(options.defer===false)return bot(i.guild_id).handle(raw,headers);
+  if(i.type!==2||!/^\d{16,22}$/.test(i.id||'')||!/^\d{16,22}$/.test(i.member?.user?.id||'')||!/^[-A-Za-z0-9._]{20,300}$/.test(i.token||''))return{status:400,body:{error:'Invalid interaction.'}};
+  const privateReply=!['game','guide','new-games'].includes(i.data?.name);
+  return{status:200,body:{type:5,data:privateReply?{flags:64}:{}},after:async()=>{let result;try{result=await bot(i.guild_id).handle(raw,headers);if(result.after){await result.after();return}}catch{result={body:message('The service is temporarily unavailable. Please retry shortly.',{privateReply:true})}}const data=result.body?.data||{content:'The command could not complete. Please retry.'};const {flags,...payload}=data;const r=await fetcher('https://discord.com/api/v10/webhooks/'+applicationId+'/'+i.token+'/messages/@original',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(5000)});if(!r.ok)throw Error('Could not deliver the command response.')}};
  },announce:async()=>{if(!owner)await ready();const rows=db.prepare("SELECT key FROM discord_bot_state WHERE key LIKE 'channel:%'").all();for(const r of rows){const id=r.key.slice(8);if(/^\d{16,22}$/.test(id))try{await bot(id).announce()}catch{console.error('Discord server announcement check failed.')}}},stop(){for(const b of bots.values())b.stop()}};
 }

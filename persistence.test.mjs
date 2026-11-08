@@ -45,3 +45,7 @@ test('account passwords and private state survive a cloud-backed server restart'
   assert.equal(res.status,401);
  }finally{await after.app.close()}
 });
+
+test('cloud snapshots survive idle connection errors and retry failed transactions',async()=>{
+ const {EventEmitter}=await import('node:events'),{openCloudSnapshots}=await import('./cloud-snapshots.mjs'),{DatabaseSync}=await import('node:sqlite');const pool=new EventEmitter();let fail=false,releases=0,writes=0;pool.query=async()=>({rows:[]});pool.connect=async()=>({query:async(sql)=>{if(sql.startsWith('INSERT')){if(fail){fail=false;throw Error('Temporary disconnect')}writes++}return{rows:[]}},release:()=>releases++});pool.end=async()=>{};const cloud=await openCloudSnapshots('test-only',{poolFactory:()=>pool});const db=new DatabaseSync(':memory:');try{db.exec('CREATE TABLE t(x);INSERT INTO t VALUES(1)');pool.emit('error',Error('Idle disconnect'));await cloud.flushIfChanged(db);db.exec('INSERT INTO t VALUES(2)');fail=true;await assert.rejects(cloud.flushIfChanged(db));await cloud.flushIfChanged(db);assert.equal(writes,2);assert.equal(releases,3)}finally{await cloud.close();db.close()}
+});
