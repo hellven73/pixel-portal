@@ -64,7 +64,7 @@ export async function createPortal(options={}){
  const announcementTimer=setInterval(()=>discord.announce().catch(()=>console.error('Discord announcement check failed.')),600000);announcementTimer.unref();
  const server=createServer(async(req,res)=>{
   // Acknowledge account and playtime changes only after cloud persistence.
-  if(cloud&&(req.url?.startsWith('/api/')||req.url?.startsWith('/arcade-api/')||req.url?.startsWith('/github-api/'))){
+  if(cloud&&!['GET','HEAD','OPTIONS'].includes(req.method)&&(req.url?.startsWith('/api/')||req.url?.startsWith('/arcade-api/')||req.url?.startsWith('/github-api/'))){
    const end=res.end.bind(res);let finishing=false;
    res.end=function(...args){
     if(finishing)return res;

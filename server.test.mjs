@@ -108,7 +108,14 @@ test('account writes wait for durable storage acknowledgement',{timeout:5000},as
  });
  await storageReached;
  assert.equal(typeof release,'function');
- release();
+ try{
+  const preflight=await fetch(h.base+'/github-api/profile',{method:'OPTIONS',headers:{Origin:'https://hellven73.github.io','Access-Control-Request-Method':'GET'},signal:AbortSignal.timeout(1000)});
+  assert.equal(preflight.status,204);
+  const profile=await fetch(h.base+'/github-api/profile',{headers:{Origin:'https://hellven73.github.io'},signal:AbortSignal.timeout(1000)});
+  assert.equal(profile.status,401);
+  assert.equal(updates,2,'Read-only mirror requests must not join the save queue');
+ }finally{release()}
+
  const response=await pending;
  assert.equal(response.status,201);
  assert.equal((await response.json()).user.username,'durable_member');
