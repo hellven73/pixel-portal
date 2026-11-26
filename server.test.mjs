@@ -249,3 +249,26 @@ test('Google account pages are not served through the proxy origin',async t=>{
  const r=await fetch('http://127.0.0.1:'+proxy.address().port+'/service/'+encodeURIComponent('https://accounts.google.com/'));
  assert.equal(r.status,409);const html=await r.text();assert.match(html,/No Google login page or password form/);assert.doesNotMatch(html,/<form|<input|http-equiv=.refresh/i);
 });
+
+test('the Arcade exposes an independently scoped installable app', async t => {
+ const h=await harness();t.after(()=>h.app.close());
+ const page=await (await fetch(h.base+'/arcade/')).text();
+ assert.match(page,/<link rel="manifest" href="arcade\.webmanifest">/);
+ for(const prefix of ['/arcade/','/pixel/arcade/']){
+  const manifestUrl=new URL(prefix+'arcade.webmanifest',h.base);
+  const response=await fetch(h.base+'/arcade/arcade.webmanifest');
+  assert.match(response.headers.get('content-type'),/application\/manifest\+json/);
+  const manifest=await response.json();
+  assert.equal(new URL(manifest.scope,manifestUrl).pathname,prefix);
+  assert.equal(new URL(manifest.start_url,manifestUrl).pathname,prefix);
+  assert.equal(manifest.display,'standalone');
+  for(const icon of manifest.icons){
+   const asset=await fetch(h.base+'/arcade/'+icon.src);
+   assert.equal(asset.status,200);
+   assert.match(asset.headers.get('content-type'),/image\/png/);
+   assert.equal(new DataView(await asset.arrayBuffer()).getUint32(16),Number(icon.sizes.split('x')[0]));
+  }
+ }
+ assert.match(await (await fetch(h.base+'/arcade/arcade-worker.js')).text(),/arcade-offline\.html/);
+ assert.match(await (await fetch(h.base+'/arcade/arcade-offline.html')).text(),/PixelArcade is offline/);
+});

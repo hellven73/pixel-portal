@@ -22,7 +22,7 @@ for(const name of ['index.html','app.js','services.js','community.js','style.css
 await writeFile(join(out,'.nojekyll'),'');
 await writeFile(join(out,'404.html'),`<!doctype html><meta charset="utf-8"><title>Pixel Arcade</title><p>This page could not be found. <a href="${base}">Back to Pixel Arcade</a></p>`);
 const publicFiles=(await readdir(out,{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>join(e.parentPath,e.name).slice(out.length+1)).sort();
-for(const file of publicFiles.filter(file=>file.endsWith('.html'))){const path=join(out,file);await writeFile(path,withGoogleTag(await readFile(path,'utf8')));}
+for(const file of publicFiles.filter(file=>file.endsWith('.html')&&file!=='arcade/arcade-offline.html')){const path=join(out,file);await writeFile(path,withGoogleTag(await readFile(path,'utf8')));}
 execFileSync('tar',['-czf','vercel-site.tar.gz','-C',out,...publicFiles]);
 console.log('Built public frontend only. Backend services remain on the existing server.');
 

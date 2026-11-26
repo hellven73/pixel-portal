@@ -144,7 +144,7 @@ export async function createPortal(options={}){
   const data=await readFile(join(isHomeMotion?join(root,'motion'):arcade.directory,file));
   // Provider sign-in popups need their opener; the separate Scramjet service keeps isolation.
   res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');res.removeHeader('Cross-Origin-Embedder-Policy');
-  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.wasm':'application/wasm','.data':'application/octet-stream','.gz':'application/gzip'}[extname(file)]||'text/plain; charset=utf-8';
+  const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.webmanifest':'application/manifest+json; charset=utf-8','.wasm':'application/wasm','.data':'application/octet-stream','.gz':'application/gzip'}[extname(file)]||'text/plain; charset=utf-8';
   if(file==='index.html'){
    let html=data.toString('utf8');
    // The main Arcade is served from /, /arcade and /arcade/. Its vendored assets
@@ -170,7 +170,7 @@ export async function createPortal(options={}){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:withGoogleTag(html));
   }
-  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')?withGoogleTag(data.toString('utf8')):data));
+  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css','.webmanifest'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')&&file!=='arcade-offline.html'?withGoogleTag(data.toString('utf8')):data));
  }
  if(path==='/portal'||path==='/portal/'){
   const html=(await readFile(join(root,'index.html'),'utf8')).replace('<head>','<head><base href="/">');res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(method==='HEAD'?undefined:withGoogleTag(html));

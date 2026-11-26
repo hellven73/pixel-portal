@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "PixelArcade",
+  "short_name": "PixelArcade",
+  "description": "Browser games, discovery and your arcade library.",
+  "start_url": "./?source=app#home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#15121f",
+  "theme_color": "#15121f",
+  "icons": [
+    { "src": "arcade-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "arcade-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

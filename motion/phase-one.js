@@ -49,6 +49,9 @@
       const latest = readHistory(history);
       if (latest.find(row => row.id === active.id && row.at > active.at)) return;
       const entry = { id: active.id, at: active.at, seconds: Math.floor(active.elapsed / 1000) };
+      document.dispatchEvent(new CustomEvent('pixel-session-checkpoint', {
+        detail: { ...entry, name: active.name, genre: active.genre }
+      }));
       history = [entry, ...latest.filter(row => row.id !== active.id)]
         .sort((a, b) => b.at - a.at).slice(0, 20);
       write(key, history);
@@ -64,7 +67,7 @@
       const game = typeof current === 'undefined' ? null : current;
       if (frame && allowed(game)) {
         if (!findGame(game.id)) releases.set(game.id, game);
-        active = { id: game.id, at: Date.now(), elapsed: 0, visibleSince: document.hidden ? null : performance.now() };
+        active = { id: game.id, name: game.name, genre: game.cat, at: Date.now(), elapsed: 0, visibleSince: document.hidden ? null : performance.now() };
         checkpoint();
       }
       renderRecent();

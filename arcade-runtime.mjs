@@ -23,20 +23,14 @@ async function prepare(){
  const overrides=JSON.parse(await readFile(join(root,'arcade-overrides.json'),'utf8').catch(error=>{if(error.code==='ENOENT')return '{}';throw error;}));
  for(const [name,content]of Object.entries(overrides.files||{})){
   if(!['apps.js','scramjet-home.js','hub.js'].includes(name)||!manifest.files.includes(name)||typeof content!=='string')throw Error('Invalid Arcade source override.');
-  await writeFile(join(directory,name),content);
+  const rowMarker="b.append(make('b',g.name),make('small',pretty(g.seconds)+' played'));recent.append(b)";
+  const source=name==='scramjet-home.js'?content.replace(rowMarker,"b.dataset.gameId=g.game;"+rowMarker):content;
+  await writeFile(join(directory,name),source);
  }
  for(const name of ['index.html','arcade.html']){
   let html=await readFile(join(directory,name),'utf8');
   for(const [before,after]of Object.entries(overrides.versions||{}))html=html.replaceAll(before,after);
   await writeFile(join(directory,name),html);
- }
- const progressPath=join(directory,'scramjet-home.js');
- const progressSource=await readFile(progressPath,'utf8');
- const rowMarker="b.append(make('b',g.name),make('small',pretty(g.seconds)+' played'));recent.append(b)";
- const identifiedRow="b.dataset.gameId=g.game;"+rowMarker;
- if(!progressSource.includes(identifiedRow)){
-  if(!progressSource.includes(rowMarker))throw Error('Recent games row marker missing.');
-  await writeFile(progressPath,progressSource.replace(rowMarker,identifiedRow));
  }
  let workerText=await readFile(join(directory,'backend-worker.mjs'),'utf8');
  if(!workerText.includes("import {engagement} from '../engagement-api.mjs'")){
