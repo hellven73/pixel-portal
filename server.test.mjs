@@ -150,6 +150,8 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   const base=new URL(baseMatch[1],h.base+path);
   assert.equal(base.pathname,'/arcade/');
   assert.match(html,/webports-home\.js\?v=4/);
+  assert.match(html,/<details class="compact-explanation" id="patch-notes">/);
+  assert.match(html,/<time datetime="2026-11-26">26 November 2026<\/time>/);
   assert.match(html,/<link rel="stylesheet" href="home-motion\.css\?v=1">/);
   assert.match(html,/<script type="module" src="home-motion\.js\?v=1"><\/script>/);
   for(const asset of ['extras.js','hub.js','api-client.js','community.js','style.css','home-motion.css','home-motion.js']){
@@ -159,7 +161,7 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   }
  }
  for(const path of ['/portal','/arcade/hextris.html']){
-  assert.doesNotMatch(await (await fetch(h.base+path)).text(),/home-motion\.(?:css|js)/,path);
+  assert.doesNotMatch(await (await fetch(h.base+path)).text(),/home-motion\.(?:css|js)|id="patch-notes"/,path);
  }
 });
 

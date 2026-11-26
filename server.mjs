@@ -2,6 +2,7 @@ import {registerCommands} from './discord-register.mjs';
 import {createDiscordHub} from './discord-bot.mjs';
 import {engagement} from './engagement-api.mjs';
 import {withGoogleTag} from './analytics.mjs';
+import {enhanceArcadeHome,homeMotionFiles} from './arcade-home.mjs';
 import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
@@ -14,7 +15,6 @@ import {createArcade,prepareArcade} from './arcade-runtime.mjs';
 import {remoteArcade} from './remote-arcade.mjs';
 import {openCloudSnapshots} from './cloud-snapshots.mjs';
 const scrypt=promisify(scryptCb),root=dirname(fileURLToPath(import.meta.url));
-const homeMotionFiles=new Set(['home-motion.css','home-motion.js']);
 export const products=JSON.parse(await readFile(join(root,'shop-data.json'),'utf8'));
 class HttpError extends Error{constructor(status,message){super(message);this.status=status;}}
 const fail=(status,message)=>{throw new HttpError(status,message);};
@@ -166,8 +166,7 @@ export async function createPortal(options={}){
    // Add native Webported Games to the bundled Arcade homepage (not /portal).
    html=html.replace('</head>','<link rel="stylesheet" href="/webports-home.css?v=2"></head>');
    html=html.replace('</body>','<script src="/webports-home.js?v=4" defer></script></body>');
-   html=html.replace('</head>','<link rel="stylesheet" href="home-motion.css?v=1"></head>');
-   html=html.replace('</body>','<script type="module" src="home-motion.js?v=1"></script></body>');
+   html=enhanceArcadeHome(html);
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:withGoogleTag(html));
   }
