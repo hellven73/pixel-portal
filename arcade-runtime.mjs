@@ -30,6 +30,14 @@ async function prepare(){
   for(const [before,after]of Object.entries(overrides.versions||{}))html=html.replaceAll(before,after);
   await writeFile(join(directory,name),html);
  }
+ const progressPath=join(directory,'scramjet-home.js');
+ const progressSource=await readFile(progressPath,'utf8');
+ const rowMarker="b.append(make('b',g.name),make('small',pretty(g.seconds)+' played'));recent.append(b)";
+ const identifiedRow="b.dataset.gameId=g.game;"+rowMarker;
+ if(!progressSource.includes(identifiedRow)){
+  if(!progressSource.includes(rowMarker))throw Error('Recent games row marker missing.');
+  await writeFile(progressPath,progressSource.replace(rowMarker,identifiedRow));
+ }
  let workerText=await readFile(join(directory,'backend-worker.mjs'),'utf8');
  if(!workerText.includes("import {engagement} from '../engagement-api.mjs'")){
   workerText="import {engagement} from '../engagement-api.mjs';\n"+workerText;
