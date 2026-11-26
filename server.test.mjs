@@ -150,11 +150,16 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   const base=new URL(baseMatch[1],h.base+path);
   assert.equal(base.pathname,'/arcade/');
   assert.match(html,/webports-home\.js\?v=4/);
-  for(const asset of ['extras.js','hub.js','api-client.js','community.js','style.css']){
+  assert.match(html,/<link rel="stylesheet" href="home-motion\.css\?v=1">/);
+  assert.match(html,/<script type="module" src="home-motion\.js\?v=1"><\/script>/);
+  for(const asset of ['extras.js','hub.js','api-client.js','community.js','style.css','home-motion.css','home-motion.js']){
    const assetResponse=await fetch(new URL(asset,base));
    assert.equal(assetResponse.status,200,path+' should load '+asset);
    assert.match(assetResponse.headers.get('content-type')||'',asset.endsWith('.css')?/text\/css/:/javascript/);
   }
+ }
+ for(const path of ['/portal','/arcade/hextris.html']){
+  assert.doesNotMatch(await (await fetch(h.base+path)).text(),/home-motion\.(?:css|js)/,path);
  }
 });
 

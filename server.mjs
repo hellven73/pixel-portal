@@ -14,6 +14,7 @@ import {createArcade,prepareArcade} from './arcade-runtime.mjs';
 import {remoteArcade} from './remote-arcade.mjs';
 import {openCloudSnapshots} from './cloud-snapshots.mjs';
 const scrypt=promisify(scryptCb),root=dirname(fileURLToPath(import.meta.url));
+const homeMotionFiles=new Set(['home-motion.css','home-motion.js']);
 export const products=JSON.parse(await readFile(join(root,'shop-data.json'),'utf8'));
 class HttpError extends Error{constructor(status,message){super(message);this.status=status;}}
 const fail=(status,message)=>{throw new HttpError(status,message);};
@@ -138,7 +139,9 @@ export async function createPortal(options={}){
  if(path==='/'||path==='/arcade'||path.startsWith('/arcade/')){
   if(!['GET','HEAD'].includes(method))fail(405,'Method not allowed.');
   const file=decodeURIComponent(path==='/'||path==='/arcade'||path==='/arcade/'?'index.html':path.slice(8));
-  if(!arcade.files.has(file))fail(404,'Not found.');const data=await readFile(join(arcade.directory,file));
+  const isHomeMotion=homeMotionFiles.has(file);
+  if(!isHomeMotion&&!arcade.files.has(file))fail(404,'Not found.');
+  const data=await readFile(join(isHomeMotion?join(root,'motion'):arcade.directory,file));
   // Provider sign-in popups need their opener; the separate Scramjet service keeps isolation.
   res.setHeader('Cross-Origin-Opener-Policy','same-origin-allow-popups');res.removeHeader('Cross-Origin-Embedder-Policy');
   const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.wasm':'application/wasm','.data':'application/octet-stream','.gz':'application/gzip'}[extname(file)]||'text/plain; charset=utf-8';
@@ -163,6 +166,8 @@ export async function createPortal(options={}){
    // Add native Webported Games to the bundled Arcade homepage (not /portal).
    html=html.replace('</head>','<link rel="stylesheet" href="/webports-home.css?v=2"></head>');
    html=html.replace('</body>','<script src="/webports-home.js?v=4" defer></script></body>');
+   html=html.replace('</head>','<link rel="stylesheet" href="home-motion.css?v=1"></head>');
+   html=html.replace('</body>','<script type="module" src="home-motion.js?v=1"></script></body>');
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:withGoogleTag(html));
   }

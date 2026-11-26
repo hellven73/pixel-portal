@@ -1,0 +1,238 @@
+@media (prefers-reduced-motion: no-preference) {
+  body[data-pixel-motion] {
+    --px-motion-out: cubic-bezier(.22, 1, .36, 1);
+    --px-motion-snap: cubic-bezier(.2, .8, .25, 1.08);
+  }
+
+  body[data-pixel-motion] :is(.card, .destination-card, .home-tool-card):hover {
+    transform: none;
+  }
+
+  body[data-pixel-motion] [data-px-motion-surface] {
+    translate: var(--px-motion-x, 0px) var(--px-motion-y, 0px);
+    scale: var(--px-motion-scale, 1);
+    transition-property: border-color, background-color, color, box-shadow;
+  }
+
+  body[data-pixel-motion] [data-px-motion-surface="card"] {
+    transform: perspective(760px) rotateX(var(--px-motion-rx)) rotateY(var(--px-motion-ry)) !important;
+  }
+
+  [data-px-motion-surface="card"] :is(.game-cover, .game-icon, .new-game-symbol, .new-game-card > img, .home-tool-art, .destination-card > .ui-glyph) {
+    translate: var(--px-motion-art-x) var(--px-motion-art-y);
+  }
+
+  [data-px-motion-surface="card"] .game-cover {
+    scale: var(--px-motion-zoom);
+  }
+
+  [data-px-motion-surface="card"] :is(.cardbody, .home-tool-copy, .new-game-info, .destination-card > h2, .destination-card > p) {
+    translate: var(--px-motion-copy-x) var(--px-motion-copy-y);
+  }
+
+  [data-px-motion-surface="card"] :is(.heart, .ui-card-arrow, .ui-destination-arrow, .new-game-launch) {
+    translate: var(--px-motion-control-x) var(--px-motion-control-y);
+  }
+
+  [data-px-motion-surface="button"] > :is(svg, .ui-glyph, .compact-icon) {
+    translate: var(--px-motion-art-x) var(--px-motion-art-y);
+  }
+
+  [data-px-motion-surface="hero"] .ui-planet {
+    translate: var(--px-motion-art-x) var(--px-motion-art-y);
+  }
+
+  [data-px-motion-surface="hero"] :is(.ui-orbit, .ui-art-caption) {
+    translate: var(--px-motion-copy-x) var(--px-motion-copy-y);
+  }
+
+  [data-px-motion-surface="hero"] :is(.ui-floating-tile, .ui-satellite) {
+    translate: var(--px-motion-control-x) var(--px-motion-control-y);
+  }
+
+  [data-px-motion-position] {
+    position: relative;
+  }
+
+  .px-motion-sheen {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .px-motion-sheen::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 280px;
+    height: 280px;
+    margin: -140px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--lime, currentColor) 17%, transparent), transparent 67%);
+    transform: translate3d(var(--px-motion-light-x, 0px), var(--px-motion-light-y, 0px), 0);
+    opacity: var(--px-motion-light, 0);
+  }
+
+  body[data-pixel-motion] .ui-nav-scroll {
+    position: relative;
+  }
+
+  #side-nav .px-motion-nav-rail {
+    position: absolute;
+    inset: 0 auto auto 0;
+    box-sizing: border-box;
+    border: 1px solid;
+    transform-origin: top left;
+    pointer-events: none;
+  }
+
+  body[data-pixel-motion].ui-renovated #side-nav .ui-nav-scroll .side-link.active[data-px-motion-rail] {
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+
+  .px-motion-search-bridge {
+    position: fixed;
+    box-sizing: border-box;
+    border: 1px solid var(--lime);
+    transform-origin: top left;
+    pointer-events: none;
+    z-index: 12;
+  }
+
+  body[data-pixel-motion] #home-search-form button,
+  body[data-pixel-motion] #home-search-form > span {
+    transition: translate 220ms var(--px-motion-out);
+  }
+
+  body[data-pixel-motion] #home-search-form:focus-within > span {
+    translate: 2px 0;
+  }
+
+  body[data-pixel-motion] #home-search-form:focus-within button:not([data-px-motion-surface]) {
+    translate: -2px 0;
+  }
+
+  body[data-pixel-motion] :is(#home-search-form, #search, .px-webports-search) {
+    transition: border-color 220ms var(--px-motion-out), box-shadow 220ms var(--px-motion-out);
+  }
+
+  body[data-pixel-motion] .px-motion-flight {
+    position: fixed;
+    inset: auto;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    overflow: hidden;
+    background: transparent;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+
+  .px-motion-flight > img,
+  .px-motion-flight > .thumb {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .px-motion-flight > .thumb {
+    display: grid;
+  }
+
+  @supports (transition-behavior: allow-discrete) {
+    body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial) {
+      translate: 0 14px;
+      scale: .985;
+      opacity: 0;
+      transition: translate 320ms var(--px-motion-out), scale 320ms var(--px-motion-snap),
+        opacity 180ms ease, display 320ms allow-discrete, overlay 320ms allow-discrete;
+    }
+
+    body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial)[open] {
+      translate: none;
+      scale: none;
+      opacity: 1;
+    }
+
+    body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial)::backdrop {
+      opacity: 0;
+      transition: opacity 240ms ease, display 240ms allow-discrete, overlay 240ms allow-discrete;
+    }
+
+    body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial)[open]::backdrop {
+      opacity: 1;
+    }
+
+    body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial):not([open]),
+    body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial):not([open])::backdrop {
+      pointer-events: none;
+    }
+
+    @starting-style {
+      body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial)[open] {
+        translate: 0 14px;
+        scale: .985;
+        opacity: 0;
+      }
+
+      body[data-pixel-motion] :is(#account, #settings, #stats, #addgame, #tutorial)[open]::backdrop {
+        opacity: 0;
+      }
+    }
+  }
+
+  @supports selector(details::details-content) {
+    body[data-pixel-motion] .compact-more::details-content {
+      content-visibility: hidden;
+      transition: content-visibility 180ms allow-discrete;
+    }
+
+    body[data-pixel-motion] .compact-more[open]::details-content {
+      content-visibility: visible;
+    }
+
+    body[data-pixel-motion] .compact-more-panel {
+      transform-origin: top right;
+      translate: 0 -6px;
+      scale: .98;
+      opacity: 0;
+      pointer-events: none;
+      transition: translate 200ms var(--px-motion-out), scale 200ms var(--px-motion-snap), opacity 140ms ease;
+    }
+
+    body[data-pixel-motion] .compact-more[open] > .compact-more-panel {
+      translate: none;
+      scale: none;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    @starting-style {
+      body[data-pixel-motion] .compact-more[open] > .compact-more-panel {
+        translate: 0 -6px;
+        scale: .98;
+        opacity: 0;
+      }
+    }
+  }
+
+  @media (max-width: 760px) {
+    body[data-pixel-motion] .compact-nav#side-nav {
+      transition: transform 300ms var(--px-motion-out);
+    }
+
+    body[data-pixel-motion] .compact-nav-shade:not([hidden]) {
+      animation: px-motion-shade-in 220ms ease both;
+    }
+  }
+
+  @keyframes px-motion-shade-in {
+    from { opacity: 0; }
+  }
+}
