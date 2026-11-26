@@ -210,8 +210,11 @@
       const shortcuts = [
         visit('Home', 'home'), visit('Game Library', 'all'), visit('Webported Games', 'webports'),
         command('Game Roulette', 'Discover a game', openRoulette),
-        control('Switch light or dark theme', 'theme-toggle'), control('Settings', 'side-settings'),
-        control('Playtime stats', 'statsview'), control('Toggle favourites filter', 'favview'),
+        command('Theme', 'Switch light or dark mode', () => document.getElementById('theme-toggle')?.click()), control('Settings', 'side-settings'),
+        control('Playtime stats', 'statsview'), command('Favourites', 'Toggle the library favourites filter', () => {
+          showSection('all');
+          document.getElementById('favview')?.click();
+        }),
       ];
       const favourites = read('px-favs', []);
       const favoriteIds = new Set(Array.isArray(favourites) ? favourites : []);
