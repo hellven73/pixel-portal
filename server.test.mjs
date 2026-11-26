@@ -126,13 +126,20 @@ test('homepage exposes embedded Webported Games without provider links',async t=
  const html=await fetch(h.base+'/');
  assert.equal(html.status,200);
  const body=await html.text();
- assert.match(body,/webports-home\.js\?v=4/);
+ assert.match(body,/webports-home\.js\?v=5/);
  assert.match(body,/webports-home\.css\?v=2/);
  const scripts=await fetch(h.base+'/webports-home.js');
  assert.equal(scripts.status,200);
  const js=await scripts.text();
  assert.match(js,/px-webports-page/);
  assert.match(js,/px-webport-theater/);
+ assert.match(js,/quake-ii-offline\.tar\.gz/);
+ for(const file of ['hextris-offline.tar.gz','quake-ii-offline.tar.gz']){
+  const download=await fetch(h.base+'/arcade/'+file);
+  assert.equal(download.status,200);
+  assert.match(download.headers.get('content-type'),/application\/gzip/);
+  assert.deepEqual([...new Uint8Array(await download.arrayBuffer()).slice(0,2)],[31,139]);
+ }
  assert.doesNotMatch(js,/Open directly|Open separately|Community port hosted by/);
  const styles=await fetch(h.base+'/webports-home.css');
  assert.equal(styles.status,200);
@@ -145,11 +152,12 @@ test('all Arcade URLs resolve bundled JavaScript and CSS from /arcade/',async t=
   const response=await fetch(h.base+path);
   assert.equal(response.status,200);
   const html=await response.text();
+  assert.match(html,/href="hextris-offline\.tar\.gz" download/);
   const baseMatch=html.match(/<base href="([^"]+)"/);
   assert.ok(baseMatch,path+' must explicitly set base href for bundled assets');
   const base=new URL(baseMatch[1],h.base+path);
   assert.equal(base.pathname,'/arcade/');
-  assert.match(html,/webports-home\.js\?v=4/);
+  assert.match(html,/webports-home\.js\?v=5/);
   assert.match(html,/<details class="compact-explanation" id="patch-notes">/);
   assert.match(html,/<time datetime="2026-11-26">26 November 2026<\/time>/);
   assert.match(html,/<link rel="stylesheet" href="home-motion\.css\?v=1">/);
