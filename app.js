@@ -61,7 +61,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#entrance').hidd
 window.addEventListener('resize',()=>{if(!$('#entrance').hidden)starfield();});
 $('#reduce-motion').onchange=e=>{reduced=e.target.checked;storage.set('reduced',reduced);document.documentElement.classList.toggle('reduce-motion',reduced);if(!$('#entrance').hidden)starfield();};
 $('#show-entrance').checked=storage.get('showEntrance',true);$('#show-entrance').onchange=e=>storage.set('showEntrance',e.target.checked);
-let view='home';const titles={home:'Home',games:'Games',webports:'Webported Games',browse:'Browser',music:'Music',notes:'Notebook',themes:'Appearance',chat:'Chat',ai:'Assistant',market:'Marketplace',emulator:'Emulator'};
+let view='home';const titles={home:'Home',games:'Games',webports:'Local Games',browse:'Browser',music:'Music',notes:'Notebook',themes:'Appearance',chat:'Chat',ai:'Assistant',market:'Marketplace',emulator:'Emulator'};
 function setView(next,updateHash=true){
  if(!Object.hasOwn(titles,next))next='home';view=next;
  $$('[data-page]').forEach(s=>s.hidden=s.dataset.page!==view);$$('nav [data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);if(b.dataset.view===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});

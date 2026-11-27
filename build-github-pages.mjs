@@ -2,13 +2,13 @@ import {withGoogleTag} from './analytics.mjs';
 import {enhanceArcadeHome,homeMotionFiles} from './arcade-home.mjs';
 import {prepareArcade} from './arcade-runtime.mjs';
 import {readFile,writeFile,mkdir,rm,copyFile,readdir} from 'node:fs/promises';
-import {join} from 'node:path';
+import {join,dirname} from 'node:path';
 import {execFileSync} from 'node:child_process';
 const base='/pixel/',out='github-pages-dist';
 const {directory:arcadeSource,files:arcadeFiles}=await prepareArcade();
 await rm(out,{recursive:true,force:true});await mkdir(join(out,'arcade'),{recursive:true});await mkdir(join(out,'portal'),{recursive:true});
 const removed=['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'];
-for(const name of arcadeFiles){if(name.startsWith('backend-')||/\.(ts|sql)$|\.test\.mjs$/.test(name)||removed.includes(name)||['README.md','BACKEND.md'].includes(name))continue;await copyFile(join(arcadeSource,name),join(out,'arcade',name));}
+for(const name of arcadeFiles){if(name.startsWith('backend-')||/\.(ts|sql)$|\.test\.mjs$/.test(name)||removed.includes(name)||['README.md','BACKEND.md'].includes(name))continue;await mkdir(dirname(join(out,'arcade',name)),{recursive:true});await copyFile(join(arcadeSource,name),join(out,'arcade',name));}
 await copyFile('github-api-client.js',join(out,'arcade','api-client.js'));
 for(const name of homeMotionFiles)await copyFile(new URL(`./motion/${name}`,import.meta.url),join(out,'arcade',name));
 for(const name of ['integration.js','renovation.js']){const file=join(out,'arcade',name);let s=await readFile(file,'utf8');s=s.replaceAll("'/portal",`'${base}portal/index.html`).replaceAll("'/catalogue.json",`'${base}catalogue.json`).replaceAll("fetch('/arcade-api/status')","window.pixelApi.request('/api/status')");await writeFile(file,s);}
@@ -22,6 +22,6 @@ for(const name of ['index.html','app.js','services.js','community.js','style.css
 await writeFile(join(out,'.nojekyll'),'');
 await writeFile(join(out,'404.html'),`<!doctype html><meta charset="utf-8"><title>Pixel Arcade</title><p>This page could not be found. <a href="${base}">Back to Pixel Arcade</a></p>`);
 const publicFiles=(await readdir(out,{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>join(e.parentPath,e.name).slice(out.length+1)).sort();
-for(const file of publicFiles.filter(file=>file.endsWith('.html')&&file!=='arcade/arcade-offline.html')){const path=join(out,file);await writeFile(path,withGoogleTag(await readFile(path,'utf8')));}
+for(const file of publicFiles.filter(file=>file.endsWith('.html')&&file!=='arcade/arcade-offline.html'&&!file.startsWith('arcade/oss-games/'))){const path=join(out,file);await writeFile(path,withGoogleTag(await readFile(path,'utf8')));}
 execFileSync('tar',['-czf','site.tar.gz','-C',out,...publicFiles]);
 console.log('Built public frontend only. Account services remain on pixelarcade.com.au.');
