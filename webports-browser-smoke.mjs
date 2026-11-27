@@ -42,7 +42,7 @@ try {
  assert.equal(result.visible,true);
  assert.equal(result.emojiDuplicate,false);
  const catalogue=JSON.parse(await readFile(new URL('./webports.json',import.meta.url),'utf8'));
- const expected=catalogue.games.filter(game=>/^https:\/\//.test(game.url)).map(game=>game.name);
+ const expected=catalogue.games.filter(game=>game.local===true&&game.url.startsWith('./')).map(game=>game.name);
  assert.equal(result.count,expected.length);
  assert.deepEqual(result.names,expected);
  assert.equal(await page.locator('a[download="quake-ii-offline.tar.gz"]').count(),1);
@@ -63,9 +63,9 @@ try {
  await fixture.waitForTimeout(50);
  assert.equal(await fixture.locator('#media-page').evaluate(el=>el.getAnimations().length),0);
  await fixture.close();
- assert.ok(result.names.includes('Kerbal Space Program'));
- assert.ok(result.names.includes('Plague Inc: Evolved'));
- console.log('PASS: All Webported Games displayed on the actual Arcade homepage.');
+ assert.ok(result.names.includes('2048'));
+ assert.ok(result.names.includes('Tetris'));
+ console.log('PASS: All first-party games displayed on the actual Arcade homepage.');
 } finally {
  if(browser)await browser.close();
  await app.close();
