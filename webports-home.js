@@ -15,7 +15,7 @@ const page=make('section','px-webports-page');
 page.id='px-webports-page';page.hidden=true;
 const heading=make('div','px-webports-heading');
 const introduction=make('div');
-introduction.append(make('div','eyebrow','PLAY THE IMPOSSIBLE'),make('h1','','Webported Games'),make('p','','Browser ports of games you know. Launch them inside Pixel Arcade without leaving the site.'));
+introduction.append(make('div','eyebrow','PLAY LOCALLY'),make('h1','','Locally Hosted Games'),make('p','','Original open-source games and existing local builds. Every playable file comes from PixelArcade.'));
 heading.append(introduction);
 const tools=make('div','px-webports-toolbar');
 const search=make('input','px-webports-search');search.type='search';search.placeholder='Search webports…';search.setAttribute('aria-label','Search webported games');
@@ -45,12 +45,12 @@ showSection=function(next){
 };
 function render(){
  const matches=ports.filter(p=>p.name.toLowerCase().includes(query)&&(!featuredOnly||p.featured));
- info.textContent=matches.length+' of '+ports.length+' webported games';
+ info.textContent=matches.length+' of '+ports.length+' local games';
  grid.replaceChildren();
  for(const port of matches){
   const card=make('article','px-webports-card');
   const art=make('div','px-webports-art');
-  art.append(make('span','','🎮'),make('small','','WEB PORT'));
+  art.append(make('span','','🎮'),make('small','','LOCAL GAME'));
   const body=make('div','px-webports-details');
   body.append(make('h3','',port.name));
   if(port.requirements)body.append(make('small','px-webports-requirements',port.requirements));
@@ -72,7 +72,7 @@ async function load(){
   if(!response.ok)throw Error('Webports catalogue returned '+response.status);
   const data=await response.json();
   if(!Array.isArray(data.games))throw Error('Invalid catalogue');
-  ports=data.games.filter(p=>p&&typeof p.name==='string'&&typeof p.url==='string'&&/^https:\/\//.test(p.url));
+  ports=data.games.filter(p=>p&&p.local===true&&typeof p.name==='string'&&typeof p.url==='string'&&/^\.\/[a-z0-9]/i.test(p.url)&&new URL(p.url,document.baseURI).origin===location.origin);
   render();
  }catch(error){
   loaded=false;info.textContent='Could not load webports: '+error.message;
