@@ -42,6 +42,32 @@
       "gameAssetsIncluded": true
     },
     {
+      "id": "local-tetris",
+      "name": "Tetris",
+      "url": "./oss-games/tetris/index.html",
+      "sourceUrl": "https://github.com/jakesgordon/javascript-tetris",
+      "host": "PixelArcade",
+      "featured": true,
+      "pinned": false,
+      "local": true,
+      "license": "MIT",
+      "requirements": "Original JavaScript Tetris by Jake Gordon. Press Space to start, use the arrow keys to move pieces.",
+      "gameAssetsIncluded": true
+    },
+    {
+      "id": "local-breakout",
+      "name": "Breakout",
+      "url": "./oss-games/breakout/index.html",
+      "sourceUrl": "https://github.com/pemmyz/js_breakout",
+      "host": "PixelArcade",
+      "featured": true,
+      "pinned": false,
+      "local": true,
+      "license": "MIT",
+      "requirements": "MIT-licensed HTML5 Breakout. Paddle controls support mouse, keyboard, touch and gamepad.",
+      "gameAssetsIncluded": true
+    },
+    {
       "id": "local-platformer",
       "name": "Tiny Platformer",
       "url": "./oss-games/platformer/index.html",
