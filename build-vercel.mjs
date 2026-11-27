@@ -2,13 +2,13 @@ import {enhanceArcadeHome,homeMotionFiles} from './arcade-home.mjs';
 import {withGoogleTag} from './analytics.mjs';
 import {prepareArcade} from './arcade-runtime.mjs';
 import {readFile,writeFile,mkdir,rm,copyFile,readdir} from 'node:fs/promises';
-import {join} from 'node:path';
+import {join,dirname} from 'node:path';
 import {execFileSync} from 'node:child_process';
 const base='/',out='vercel-dist';
 const {directory:arcadeSource,files:arcadeFiles}=await prepareArcade();
 await rm(out,{recursive:true,force:true});await mkdir(join(out,'arcade'),{recursive:true});await mkdir(join(out,'portal'),{recursive:true});
 const removed=['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'];
-for(const name of arcadeFiles){if(name.startsWith('backend-')||/\.(ts|sql)$|\.test\.mjs$/.test(name)||removed.includes(name)||['README.md','BACKEND.md'].includes(name))continue;await copyFile(join(arcadeSource,name),join(out,'arcade',name));}
+for(const name of arcadeFiles){if(name.startsWith('backend-')||/\.(ts|sql)$|\.test\.mjs$/.test(name)||removed.includes(name)||['README.md','BACKEND.md'].includes(name))continue;await mkdir(dirname(join(out,'arcade',name)),{recursive:true});await copyFile(join(arcadeSource,name),join(out,'arcade',name));}
 // Keep the original same-origin cookie transport for the custom domain.
 for(const name of ['integration.js','renovation.js']){const file=join(out,'arcade',name);let s=await readFile(file,'utf8');s=s.replaceAll("'/portal",`'${base}portal/index.html`).replaceAll("'/catalogue.json",`'${base}catalogue.json`).replaceAll("fetch('/arcade-api/status')","window.pixelApi.request('/api/status')");await writeFile(file,s);}
 for(const name of ['catalogue.json','webports.json','webports-home.js','webports-home.css']){let s=await readFile(name,'utf8');if(name==='webports-home.js')s=s.replaceAll("'/webports.json",`'${base}webports.json`);await writeFile(join(out,name),s);}
