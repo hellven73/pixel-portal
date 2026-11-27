@@ -20,7 +20,7 @@ try {
  await page.waitForFunction(()=>{
   const panel=document.querySelector('#px-webports-page');
   const names=Array.from(panel?.querySelectorAll('h3')||[]).map(n=>n.textContent);
-  return !!panel&&!panel.hidden&&names.includes('Kerbal Space Program')&&names.includes('Plague Inc: Evolved');
+  return !!panel&&!panel.hidden&&names.includes('2048')&&names.includes('Tetris');
  },{timeout:30000});
  const result=await page.evaluate(()=>({
   base:document.baseURI,
