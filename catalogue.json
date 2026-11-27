@@ -2,7 +2,7 @@
   "retrievedAt": "2026-11-27",
   "provenance": "First-party local HTML5 game files. CloudMoon is a separate online service.",
   "counts": {
-    "Local games": 6
+    "Local games": 8
   },
   "games": [
     {
@@ -36,6 +36,28 @@
       "local": true,
       "license": "MIT",
       "sourceUrl": "https://github.com/jakesgordon/javascript-snakes",
+      "requiresGameData": false
+    },
+    {
+      "id": "tetris",
+      "name": "Tetris",
+      "source": "Jake Gordon / MIT",
+      "url": "../arcade/oss-games/tetris/index.html",
+      "image": null,
+      "local": true,
+      "license": "MIT",
+      "sourceUrl": "https://github.com/jakesgordon/javascript-tetris",
+      "requiresGameData": false
+    },
+    {
+      "id": "breakout",
+      "name": "Breakout",
+      "source": "pemmyz / MIT",
+      "url": "../arcade/oss-games/breakout/index.html",
+      "image": null,
+      "local": true,
+      "license": "MIT",
+      "sourceUrl": "https://github.com/pemmyz/js_breakout",
       "requiresGameData": false
     },
     {
