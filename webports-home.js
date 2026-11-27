@@ -1,4 +1,4 @@
-// Integrates the existing Webported Games collection into the actual Pixel Arcade homepage.
+// Integrates the existing Locally Hosted Games collection into the actual Pixel Arcade homepage.
 // Uses the same in-page game player and never handles account data.
 (()=>{
 'use strict';
@@ -18,14 +18,14 @@ const introduction=make('div');
 introduction.append(make('div','eyebrow','PLAY LOCALLY'),make('h1','','Locally Hosted Games'),make('p','','Original open-source games and existing local builds. Every playable file comes from PixelArcade.'));
 heading.append(introduction);
 const tools=make('div','px-webports-toolbar');
-const search=make('input','px-webports-search');search.type='search';search.placeholder='Search webports…';search.setAttribute('aria-label','Search webported games');
+const search=make('input','px-webports-search');search.type='search';search.placeholder='Search local games…';search.setAttribute('aria-label','Search locally hosted games');
 const filter=make('button','px-webports-filter','★ Featured only');filter.type='button';filter.setAttribute('aria-pressed','false');
 tools.append(search,filter);
 const offlineQuake=make('a','', 'Download Quake II engine for offline play (game files required)');
 offlineQuake.href=new URL('quake-ii-offline.tar.gz',document.baseURI);
 offlineQuake.download='quake-ii-offline.tar.gz';
 tools.append(offlineQuake);
-const info=make('p','px-webports-status','Loading webported games…');
+const info=make('p','px-webports-status','Loading local games…');
 const grid=make('div','px-webports-grid');
 page.append(heading,tools,info,grid);
 const footer=main.querySelector('footer');if(footer)footer.before(page);else main.append(page);
@@ -58,24 +58,24 @@ function render(){
   const play=make('button','px-webports-play','▶ Play');play.type='button';
   play.onclick=()=>{
    activePort=port.id;
-   openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:!port.local,help:port.requirements||'Click inside the game for controls.'},true);
+   openGame({id:port.id,name:port.name,cat:'Locally Hosted Games',size:'big',embed:port.url,external:!port.local,help:port.requirements||'Click inside the game for controls.'},true);
   };
   actions.append(play);
   body.append(actions);card.append(art,body);grid.append(card);
  }
- if(!matches.length)grid.append(make('p','px-webports-empty','No matching webports. Try a different search.'));
+ if(!matches.length)grid.append(make('p','px-webports-empty','No matching local games. Try a different search.'));
 }
 async function load(){
  loaded=true;
  try{
   const response=await fetch('/webports.json?v=8',{cache:'no-store'});
-  if(!response.ok)throw Error('Webports catalogue returned '+response.status);
+  if(!response.ok)throw Error('Local game catalogue returned '+response.status);
   const data=await response.json();
   if(!Array.isArray(data.games))throw Error('Invalid catalogue');
   ports=data.games.filter(p=>p&&p.local===true&&typeof p.name==='string'&&typeof p.url==='string'&&/^\.\/[a-z0-9]/i.test(p.url)&&new URL(p.url,document.baseURI).origin===location.origin);
   render();
  }catch(error){
-  loaded=false;info.textContent='Could not load webports: '+error.message;
+  loaded=false;info.textContent='Could not load local games: '+error.message;
   grid.replaceChildren();
   const reload=make('button','px-webports-play','Retry loading');reload.onclick=()=>void load();grid.append(reload);
  }
@@ -110,7 +110,7 @@ if(typeof resumeGame==='function'){
   if(!port)return resumeGame();
   window.pixelPendingGameId='';
   activePort=pending;
-  openGame({id:port.id,name:port.name,cat:'Webported Games',size:'big',embed:port.url,external:!port.local,help:port.requirements||'Click inside the game for controls.'},true);
+  openGame({id:port.id,name:port.name,cat:'Locally Hosted Games',size:'big',embed:port.url,external:!port.local,help:port.requirements||'Click inside the game for controls.'},true);
   return true;
  };
 }
