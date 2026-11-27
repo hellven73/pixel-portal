@@ -195,6 +195,30 @@ test('Quake II engine is local while original game data stays user-supplied',asy
  const script=await(await fetch(h.base+'/arcade/q2-launcher.js')).text();assert.doesNotMatch(script,/https?:\/\//);assert.match(script,/file\.arrayBuffer\(\)/);assert.doesNotMatch(script,/FormData|XMLHttpRequest|fetch\(/);
 });
 
+test('all eight curated games load their original first-party files without injected analytics',async t=>{
+ const h=await harness();t.after(()=>h.app.close());
+ const catalogue=(await(await fetch(h.base+'/catalogue.json')).json()).games;
+ assert.equal(catalogue.length,8);
+ for(const game of catalogue){
+  assert.equal(game.local,true);
+  const url=new URL(game.url,h.base+'/');
+  assert.equal(url.origin,new URL(h.base).origin);
+  const response=await fetch(url);
+  assert.equal(response.status,200,game.id);
+  assert.match(response.headers.get('content-type'),/text\/html/,game.id);
+  const html=await response.text();
+  assert.ok(html.length>100,game.id);
+  if(url.pathname.includes('/oss-games/'))assert.doesNotMatch(html,/googletagmanager\.com|googlesyndication\.com/,game.id);
+ }
+ for(const path of [
+  '/arcade/oss-games/2048/js/game_manager.js',
+  '/arcade/oss-games/platformer/tiles.png',
+  '/arcade/oss-games/snakes/stats.js',
+  '/arcade/oss-games/tetris/texture.jpg',
+  '/arcade/oss-games/breakout/script.js'
+ ])assert.equal((await fetch(h.base+path,{method:'HEAD'})).status,200,path);
+ assert.equal((await fetch(h.base+'/arcade/oss-games/2048/style/fonts/ClearSans-Regular-webfont.woff')).headers.get('content-type'),'font/woff');
+});
 test('Scramjet tickets require sign-in and preserve the calling mirror origin',async t=>{
  const secret='test-only-scramjet-shared-secret-at-least-32-characters';const h=await harness({proxyOrigin:'https://proxy.example',proxySecret:secret});t.after(()=>h.app.close());
  const post=async(path,{origin=h.base,data={},cookie,token}={})=>fetch(h.base+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});
