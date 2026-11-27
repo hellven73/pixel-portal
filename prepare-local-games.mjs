@@ -18,5 +18,14 @@ export async function prepareLocalGames(directory){
  await writeFile(join(directory,'catalog.js'),'window.gameCatalog='+JSON.stringify(library.games)+';\n');
  await writeFile(join(directory,'originals.json'),'[]\n');
  await writeFile(join(directory,'embed-sources.json'),'{}\n');
+ const ports=JSON.parse(await readFile(join(root,'webports.json'),'utf8'));
+ await writeFile(join(directory,'webports.json'),JSON.stringify(ports)+'\n');
+ const releasePath=join(directory,'new-games.json');
+ const releases=JSON.parse(await readFile(releasePath,'utf8'));
+ if(Array.isArray(releases.games)){
+  const localIds=new Set(ports.games.map(game=>game.id));
+  releases.games=releases.games.filter(game=>game.type==='mobile'||localIds.has(game.id));
+  await writeFile(releasePath,JSON.stringify(releases)+'\n');
+ }
  return files;
 }
