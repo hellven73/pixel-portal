@@ -170,7 +170,7 @@ export async function createPortal(options={}){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
    return res.end(method==='HEAD'?undefined:withGoogleTag(html));
   }
-  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css','.webmanifest'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')&&file!=='arcade-offline.html'?withGoogleTag(data.toString('utf8')):data));
+  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css','.webmanifest'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')&&file!=='arcade-offline.html'&&!file.startsWith('oss-games/')?withGoogleTag(data.toString('utf8')):data));
  }
  if(path==='/portal'||path==='/portal/'){
   const html=(await readFile(join(root,'index.html'),'utf8')).replace('<head>','<head><base href="/">');res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(method==='HEAD'?undefined:withGoogleTag(html));
