@@ -1,0 +1,19 @@
+@media (prefers-reduced-motion: no-preference) {
+  :root { --px-polish-out: cubic-bezier(.22,1,.36,1); }
+  body:not(.game-tab) :is(.px-command-results button,.px-console-rail button,.px-next-actions button,.px-desk-toolbar button,.px-feature-dialog button):not([data-px-motion-surface]) {
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 200ms ease, scale 220ms var(--px-polish-out);
+  }
+  body:not(.game-tab) :is(.px-command-results button,.px-console-rail button,.px-next-actions button,.px-desk-toolbar button,.px-feature-dialog button):not([data-px-motion-surface]):not(:disabled):active { scale: .96; }
+  .px-feature-dialog :is(input,select) { transition: border-color 180ms ease, box-shadow 200ms ease; }
+  .px-feature-dialog :is(input,select):focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb,var(--lime) 22%,transparent); }
+  .px-console-rail { scroll-behavior: smooth; }
+  .px-console-rail button img { transition: opacity 180ms ease, scale 300ms var(--px-polish-out); }
+  .px-console-rail button[aria-pressed="true"] img { scale: 1.035; }
+  .px-wrapped-slide { animation: px-polish-recap 300ms var(--px-polish-out) both; }
+  @keyframes px-polish-recap { from { opacity: .45; translate: 0 8px; } to { opacity: 1; translate: none; } }
+  @supports (transition-behavior: allow-discrete) {
+    .px-feature-dialog::backdrop { opacity: 0; animation: none; transition: opacity 220ms ease, display 220ms allow-discrete, overlay 220ms allow-discrete; }
+    .px-feature-dialog[open]::backdrop { opacity: 1; }
+    @starting-style { .px-feature-dialog[open]::backdrop { opacity: 0; } }
+  }
+}
