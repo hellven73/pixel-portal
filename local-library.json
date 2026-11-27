@@ -42,6 +42,32 @@
       "help": "Original JavaScript Snakes minimal demo. Space to start and arrow keys to steer."
     },
     {
+      "id": "tetris",
+      "name": "Tetris",
+      "cat": "Puzzle",
+      "size": "mini",
+      "glyph": "▦",
+      "color": "#9e7cc7",
+      "embed": "./oss-games/tetris/index.html",
+      "source": "Jake Gordon / MIT",
+      "license": "MIT",
+      "local": true,
+      "help": "Original JavaScript Tetris by Jake Gordon. Press Space to start, use the arrow keys to move pieces."
+    },
+    {
+      "id": "breakout",
+      "name": "Breakout",
+      "cat": "Arcade",
+      "size": "mini",
+      "glyph": "▰",
+      "color": "#d47569",
+      "embed": "./oss-games/breakout/index.html",
+      "source": "pemmyz / MIT",
+      "license": "MIT",
+      "local": true,
+      "help": "MIT-licensed HTML5 Breakout. Paddle controls support mouse, keyboard, touch and gamepad."
+    },
+    {
       "id": "platformer",
       "name": "Tiny Platformer",
       "cat": "Arcade",
