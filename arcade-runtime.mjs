@@ -1,5 +1,4 @@
 import {prepareOfflineGames} from './offline-games.mjs';
-import {prepareLocalGames} from './prepare-local-games.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {readFile,writeFile,mkdir,access} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
@@ -44,9 +43,8 @@ async function prepare(){
  workerText=workerText.replace('{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json}',"{DB:env.DB,getAccount,sameOrigin,isAdmin,limited,json,getFriends:async(_req,u)=>(await env.DB.prepare(\"SELECT a.username FROM friendships f JOIN arcade_accounts a ON a.user_id=CASE WHEN f.sender=? THEN f.receiver ELSE f.sender END WHERE (f.sender=? OR f.receiver=?) AND f.status='accepted'\").bind(u.userId,u.userId,u.userId).all()).results.map(r=>r.username)}");
  await writeFile(join(directory,'backend-worker.mjs'),workerText);
  const worker=(await import(pathToFileURL(join(directory,'backend-worker.mjs')).href)).default;
- const localFiles=await prepareLocalGames(directory);
  const downloads=await prepareOfflineGames(directory);
- return{directory,worker,files:new Set([...manifest.files,...downloads,...localFiles].filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
+ return{directory,worker,files:new Set([...manifest.files,...downloads].filter(name=>!['native-games.html','native-games.js','table-games.html','table-games.js','chess-app.js','chess-worker.js'].includes(name)&&!name.startsWith('backend-')&&!name.endsWith('.test.mjs')&&!name.endsWith('.ts')&&!name.endsWith('.sql')))};
 }
 export async function createArcade({dbPath,legacyDb,restoreSnapshot,adminUsername=process.env.PIXEL_ADMIN_USERNAME||'',...extra}={}){
  const source=await prepareArcade();

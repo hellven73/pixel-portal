@@ -90,39 +90,12 @@ test('existing Portal accounts migrate once with working passwords and balances'
  app=await createPortal({dbPath});assert.equal(app.arcade.db.prepare('SELECT COUNT(*) AS n FROM arcade_accounts').get().n,1);assert.equal(app.arcade.db.prepare('SELECT coins FROM market_wallets WHERE user_id=?').get('portal:1').coins,2500);await app.close();
 });
 
-test('local library contains only same-origin genuine game files and preserves CloudMoon',async()=>{
- const {runInNewContext}=await import('node:vm');
- const context={URL,document:{baseURI:'https://pixelarcade.com.au/'},location:{origin:'https://pixelarcade.com.au'}};
- runInNewContext(await readFile(new URL('./game-policy.js',import.meta.url),'utf8'),context);
- const allowed=context.pixelGameAllowed;
- for(const game of [
-  {id:'remote',url:'https://example.com/game',local:true},
-  {id:'remote',url:'../arcade/2048.html',local:false},
-  {id:'remote',url:'https://katsugachi.github.io/game',local:true},
-  {id:'remote',url:'../game.html',local:true}
- ])assert.equal(allowed(game),false,JSON.stringify(game));
- const catalogue=JSON.parse(await readFile(new URL('./catalogue.json',import.meta.url),'utf8'));
- const library=JSON.parse(await readFile(new URL('./local-library.json',import.meta.url),'utf8'));
- assert.equal(catalogue.games.length,library.games.length);
- assert.ok(catalogue.games.every(g=>g.local===true&&allowed(g)));
- assert.ok(catalogue.games.some(g=>g.name==='2048'));
- const {prepareArcade}=await import('./arcade-runtime.mjs');
- const app=await prepareArcade();
- assert.deepEqual(JSON.parse(await readFile(join(app.directory,'originals.json'),'utf8')),[]);
- const js=await readFile(join(app.directory,'catalog.js'),'utf8');
- assert.match(js,/window\.gameCatalog=/);
- assert.doesNotMatch(js,/https?:\/\//);
- for(const game of library.games){
-  const path=game.embed.slice(2);
-  assert.ok(app.files.has(path),path);
-  assert.equal((await readFile(join(app.directory,path))).length>0,true,path);
- }
- for(const path of ['oss-games/2048/LICENSE.txt','oss-games/platformer/LICENSE','oss-games/snakes/LICENSE','oss-games/tetris/LICENSE','oss-games/breakout/LICENSE'])assert.ok(app.files.has(path),path);
- const ports=JSON.parse(await readFile(new URL('./webports.json',import.meta.url),'utf8'));
- assert.equal(ports.games.length,library.games.length);
- assert.ok(ports.games.every(port=>port.local===true&&port.url.startsWith('./')));
- const mobile=JSON.parse(await readFile(join(app.directory,'cloudmoon.json'),'utf8'));
- assert.ok(Array.isArray(mobile.games)&&mobile.games.length>0);
+test('catalogues reject provider redirects and removed minigames while retaining real embeds',async()=>{
+ const {runInNewContext}=await import('node:vm');const context={URL};runInNewContext(await readFile(new URL('./game-policy.js',import.meta.url),'utf8'),context);const allowed=context.pixelGameAllowed;
+ for(const g of [{id:'reversi',embed:'./table-games.html?game=reversi'},{id:'custom-1',embed:'https://katsugachi.github.io/Solus-MS/'},{id:'x',embed:'https://eiym.org/gn-math/1.html'},{id:'x',embed:'https://example.com/game',providerLaunch:true},{id:'x',embed:'https://example.com/game',isolatedLaunch:true}])assert.equal(allowed(g),false,JSON.stringify(g));
+ const catalogue=JSON.parse(await readFile(new URL('./catalogue.json',import.meta.url)));assert.ok(catalogue.games.every(allowed));const featured=catalogue.games.filter(g=>g.source==='Featured embeds');assert.equal(featured.length,12);assert.equal(new Set(featured.map(g=>g.url)).size,12);assert.ok(featured.every(g=>g.inlineOnly&&new URL(g.url).hostname==='10minutestilldawnonline.github.io'));
+ const {prepareArcade}=await import('./arcade-runtime.mjs');const app=await prepareArcade();const originals=JSON.parse(await readFile(join(app.directory,'originals.json'),'utf8'));assert.deepEqual(originals.map(g=>g.name),['Slope']);assert.ok(originals.every(allowed));
+ const ports=JSON.parse(await readFile(new URL('./webports.json',import.meta.url)));assert.ok(ports.games.every(allowed));assert.equal(allowed({id:'slope',embed:'./slope.html'}),true);
 });
 
 test('existing-service bridge preserves account credentials and records with HttpOnly sessions',async t=>{

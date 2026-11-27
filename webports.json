@@ -1,111 +1,163 @@
 {
-  "source": "PixelArcade local-only game collection",
-  "retrievedAt": "2026-11-27",
+  "source": "https://github.com/Carter54git/Ultimate-Catalog-Of-Web-Game-Ports",
+  "retrievedAt": "2026-10-31",
   "games": [
     {
-      "id": "local-hextris",
-      "name": "Hextris",
-      "url": "./hextris.html",
-      "sourceUrl": "https://github.com/Hextris/hextris",
-      "host": "PixelArcade",
+      "id": "port-gd-webport",
+      "name": "Geometry Dash",
+      "url": "https://gd-webport.pages.dev/",
+      "sourceUrl": null,
+      "host": "gd-webport.pages.dev",
       "featured": true,
       "pinned": true,
-      "local": true,
-      "license": "GPL-3.0",
-      "requirements": "The original open-source Hextris. Rotate the hexagon and match coloured blocks.",
-      "gameAssetsIncluded": true
+      "requirements": "WebGL2 and hardware acceleration required"
     },
     {
-      "id": "local-2048",
-      "name": "2048",
-      "url": "./oss-games/2048/index.html",
-      "sourceUrl": "https://github.com/gabrielecirulli/2048",
-      "host": "PixelArcade",
+      "id": "port-ksp-web",
+      "name": "Kerbal Space Program",
+      "url": "https://ksp.ishotupa.school/",
+      "sourceUrl": "https://github.com/woahhcrackers/KSPWeb",
+      "host": "ksp.ishotupa.school",
       "featured": true,
-      "pinned": false,
-      "local": true,
-      "license": "MIT",
-      "requirements": "Original open-source 2048. Use arrows or swipe to merge tiles. Best score saves in this browser.",
-      "gameAssetsIncluded": true
+      "requirements": "Large download, desktop WebGL and roughly 3 GB of RAM. May crash on Chromebooks."
     },
     {
-      "id": "local-snakes",
-      "name": "Snakes",
-      "url": "./oss-games/snakes/index.html",
-      "sourceUrl": "https://github.com/jakesgordon/javascript-snakes",
-      "host": "PixelArcade",
+      "id": "port-plague-evolved-web",
+      "name": "Plague Inc: Evolved",
+      "url": "https://wasm.rip/files/plauge/index.html",
+      "sourceUrl": "https://github.com/Reeyuki/PlagueIncEvolved",
+      "host": "wasm.rip",
       "featured": true,
-      "pinned": false,
-      "local": true,
-      "license": "MIT",
-      "requirements": "Original JavaScript Snakes minimal demo. Space to start and arrow keys to steer.",
-      "gameAssetsIncluded": true
+      "requirements": "Desktop WebGL; approximately 300 MB initial download."
     },
     {
-      "id": "local-tetris",
-      "name": "Tetris",
-      "url": "./oss-games/tetris/index.html",
-      "sourceUrl": "https://github.com/jakesgordon/javascript-tetris",
-      "host": "PixelArcade",
-      "featured": true,
-      "pinned": false,
-      "local": true,
-      "license": "MIT",
-      "requirements": "Original JavaScript Tetris by Jake Gordon. Press Space to start, use the arrow keys to move pieces.",
-      "gameAssetsIncluded": true
+      "id": "port-3b201c391a32",
+      "name": "Among Us",
+      "url": "https://wasm.rip/files/amongus/index.html",
+      "sourceUrl": "https://github.com/wasmdotrip/AmongUsPort",
+      "host": "wasm.rip",
+      "featured": true
     },
     {
-      "id": "local-breakout",
-      "name": "Breakout",
-      "url": "./oss-games/breakout/index.html",
-      "sourceUrl": "https://github.com/pemmyz/js_breakout",
-      "host": "PixelArcade",
-      "featured": true,
-      "pinned": false,
-      "local": true,
-      "license": "MIT",
-      "requirements": "MIT-licensed HTML5 Breakout. Paddle controls support mouse, keyboard, touch and gamepad.",
-      "gameAssetsIncluded": true
+      "id": "port-e2d6771af199",
+      "name": "Baldi's Basics Birthday Bash",
+      "url": "https://wasm.rip/files/birthdaybash/index.html",
+      "sourceUrl": "https://github.com/woahhcrackers/BirthdayBashWeb",
+      "host": "wasm.rip",
+      "featured": true
     },
     {
-      "id": "local-platformer",
-      "name": "Tiny Platformer",
-      "url": "./oss-games/platformer/index.html",
-      "sourceUrl": "https://github.com/jakesgordon/javascript-tiny-platformer",
-      "host": "PixelArcade",
-      "featured": true,
-      "pinned": false,
-      "local": true,
-      "license": "MIT",
-      "requirements": "Original JavaScript platformer. Move with Left and Right, jump with Space and collect gold.",
-      "gameAssetsIncluded": true
+      "id": "port-d184b747d16d",
+      "name": "Bendy and the Ink Machine",
+      "url": "https://wasm.rip/files/BATIM/index.html",
+      "sourceUrl": "https://github.com/slqntdevss/BATIMFullPort",
+      "host": "wasm.rip",
+      "featured": true
     },
     {
-      "id": "local-slope",
-      "name": "Slope",
-      "url": "./slope.html",
+      "id": "port-afef8f264be2",
+      "name": "Cuphead",
+      "url": "https://wasm.rip/files/cuphead/index.html",
       "sourceUrl": null,
-      "host": "PixelArcade",
-      "featured": true,
-      "pinned": false,
-      "local": true,
-      "license": null,
-      "requirements": "Existing self-hosted Slope game. Steer the ball while avoiding the edges.",
-      "gameAssetsIncluded": true
+      "host": "wasm.rip",
+      "featured": true
+    },
+    {
+      "id": "port-e9234a46a8ab",
+      "name": "Plants vs. Zombies",
+      "url": "https://rgc.zone/ports/pvzweb/index.html",
+      "sourceUrl": null,
+      "host": "rgc.zone",
+      "featured": true
+    },
+    {
+      "id": "port-49c4929cd299",
+      "name": "Portal",
+      "url": "https://yikes.pw/portal/",
+      "sourceUrl": "https://github.com/weliveinhell/source-engine",
+      "host": "yikes.pw",
+      "featured": true
+    },
+    {
+      "id": "port-178746edb228",
+      "name": "Sonic CD",
+      "url": "https://tws2401.github.io/Sonic-CD-WASM/",
+      "sourceUrl": null,
+      "host": "tws2401.github.io",
+      "featured": true
+    },
+    {
+      "id": "port-4e980cab727e",
+      "name": "Stardew Valley",
+      "url": "https://wasm.rip/files/stardewvalley/index.html",
+      "sourceUrl": null,
+      "host": "wasm.rip",
+      "featured": true
+    },
+    {
+      "id": "port-0f6cd643f3d8",
+      "name": "Super Mario 64",
+      "url": "https://rgc.zone/ports/sm64-main/index.html",
+      "sourceUrl": null,
+      "host": "rgc.zone",
+      "featured": true
+    },
+    {
+      "id": "port-6fd74ab76ac0",
+      "name": "Terraria",
+      "url": "https://playterraria.lol/",
+      "sourceUrl": null,
+      "host": "playterraria.lol",
+      "featured": true
     },
     {
       "id": "port-d2bb1bc89e64",
-      "name": "Quake II (engine)",
+      "name": "Quake II",
       "url": "./q2.html",
       "sourceUrl": "https://github.com/GMH-Code/Qwasm2",
-      "host": "PixelArcade",
+      "host": "Hosted on this site",
       "featured": true,
-      "pinned": false,
       "local": true,
-      "license": "GPL-2.0",
-      "requirements": "Open-source Quake II browser engine. Supply your own legally obtained pak0.pak game data to play.",
+      "inlineOnly": true,
+      "clientLicense": "GPL-2.0",
+      "gameAssetsIncluded": false,
+      "requirements": "Browser engine hosted here. Requires your own Quake II pak0.pak (and optional pak1.pak/pak2.pak). Files stay in your browser; original game data is not included."
+    },
+    {
+      "id": "port-baeccf5829a6",
+      "name": "RollerCoaster Tycoon 2",
+      "url": "https://rgc.zone/ports/openrct2/index.html",
+      "sourceUrl": null,
+      "host": "rgc.zone",
+      "featured": true
+    },
+    {
+      "id": "port-9c07dc52959d",
+      "name": "Grand Theft Auto III",
+      "url": "https://wasm.rip/files/gta3/index.html",
+      "sourceUrl": null,
+      "host": "wasm.rip",
+      "featured": true
+    },
+    {
+      "id": "port-1b628ba93675",
+      "name": "Duke Nukem 3D",
+      "url": "https://midzer.de/wasm/duke3d/",
+      "sourceUrl": "https://github.com/midzer/BelgianChocolateDuke3D",
+      "host": "midzer.de",
+      "featured": true
+    },
+    {
+      "id": "port-gta-vice-city-client",
+      "name": "GTA: Vice City \u00b7 browser client",
+      "url": "https://joncodeofficial.github.io/gta-vice-city-wasm/",
+      "sourceUrl": "https://github.com/joncodeofficial/gta-vice-city-wasm",
+      "host": "joncodeofficial.github.io",
+      "featured": true,
+      "requirements": "MIT-licensed browser client. Requires your own legitimate Vice City game archive (~668 MB), desktop browser, WebAssembly, OPFS and Service Worker support. Game assets are not open source. Setup verified; full gameplay requires your files.",
+      "clientLicense": "MIT",
       "gameAssetsIncluded": false
     }
   ],
-  "selection": "All games run on this site's own origin. CloudMoon is separate."
+  "selection": "Distinct direct game embeds; provider landing pages removed."
 }
