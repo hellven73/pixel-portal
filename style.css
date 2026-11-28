@@ -37,3 +37,28 @@ dialog{max-height:90svh;max-width:calc(100vw - 25px);background:var(--bg);color:
 @media(max-width:900px){.chat-layout{grid-template-columns:110px minmax(0,1fr)}#members-toggle,#members-close{display:inline-flex;align-items:center;justify-content:center}#members-toggle{font-size:8px;padding:7px;gap:0;flex-shrink:0}.chat-channel-heading{gap:7px}.chat-channel-heading>span{font-size:8px}.chat-members{display:none;position:absolute;right:0;top:0;bottom:0;width:250px;z-index:5;background:var(--panel);box-shadow:-20px 0 50px #0007}.chat-layout.members-open .chat-members{display:block}.members-heading h3{margin-bottom:15px}.members-heading .icon-btn{font-size:17px}.member-row{padding:12px 7px}.member-search input{background:var(--bg)}.ports-spotlight{padding:28px}.dash-art{width:220px}}
 @media(max-width:600px){.boot-scene{min-height:500px;padding:24px 18px 40px}.boot-prism{width:80px;height:78px;margin-bottom:25px}.boot-wordmark{font-size:51px;letter-spacing:-3px;margin-bottom:28px}.boot-kicker{font-size:6px;letter-spacing:1.5px}.boot-description{font-size:10px;max-width:260px}#entrance h1{font-size:16px}.boot-beam{width:250px;height:250px}.ports-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.ports-tools{flex-direction:column;align-items:stretch;gap:10px}.ports-search{width:100%}.ports-spotlight{padding:24px;gap:0;min-height:235px;position:relative}.ports-spotlight>div:first-child{z-index:1}.ports-spotlight h3{font-size:30px}.ports-spotlight .eyebrow{font-size:6px;letter-spacing:1px}.ports-spotlight p{font-size:10px}.dash-art{position:absolute;right:-55px;top:45px;width:220px;opacity:.28;pointer-events:none}.ports-count{font-size:7px;letter-spacing:1px}.port-info{padding:13px 12px 7px}.port-info h3{font-size:11px;min-height:33px}.port-art{height:110px}.port-monogram{font-size:38px}.port-links{padding:8px 12px 13px;flex-wrap:wrap}.port-links a{font-size:8px}.ports-credit{font-size:9px}.chat-layout{grid-template-columns:85px minmax(0,1fr)}.chat-channel-heading{padding:14px 10px}.chat-channel-heading strong{font-size:10px}.channel-list{padding:20px 5px}.channel-list>button{font-size:10px;padding:9px 5px}.channel-list p{font-size:8px}.channel-list .nav-label{font-size:6px}.messages{padding:15px 12px}.composer{gap:7px;margin:0 10px 12px;padding:7px}.composer .light-btn{font-size:10px;padding:9px}.message-avatar{width:25px;height:25px;font-size:10px}.message{gap:8px}.message-meta{gap:7px}.message-meta time{font-size:7px}.message-author{font-size:10px}.message-body p{font-size:11px}.sidebar nav button[data-view=webports]{min-width:120px}.sidebar nav button[data-view=webports]>svg{margin-right:0}.sidebar nav button[data-view=webports]{font-size:9px}}
 .reduce-motion .boot-active *{animation:none!important;transition:none!important}.reduce-motion .prism-outline{stroke-dashoffset:0}.reduce-motion .prism-fill{opacity:1}.reduce-motion .boot-track i{transform:none}@media(prefers-reduced-motion:reduce){.boot-active *{animation:none!important}.prism-outline{stroke-dashoffset:0}.prism-fill{opacity:1}.boot-track i{transform:none}}
+
+@media (max-width: 760px) {
+  .searchbar, .browser-toolbar, .market-tabs, #chat-form {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  input:not([type="checkbox"]), select, textarea {
+    max-width: 100%;
+    font-size: 16px;
+  }
+  .searchbar button, .browser-toolbar button, .market-tabs button,
+  #chat-form button, dialog button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .chat-layout, .chat-main, .chat-channel-heading {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  dialog {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px - env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+}

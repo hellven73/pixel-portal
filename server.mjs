@@ -2,7 +2,7 @@ import {registerCommands} from './discord-register.mjs';
 import {createDiscordHub} from './discord-bot.mjs';
 import {engagement} from './engagement-api.mjs';
 import {withGoogleTag} from './analytics.mjs';
-import {enhanceArcadeHome,homeMotionFiles} from './arcade-home.mjs';
+import {enhanceArcadeHome,enhanceArcadeMobile,homeMotionFiles} from './arcade-home.mjs';
 import {githubOrigin,githubHeaders,githubResponse} from './github-transport.mjs';
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
@@ -168,9 +168,9 @@ export async function createPortal(options={}){
    html=html.replace('</body>','<script src="/webports-home.js?v=5" defer></script></body>');
    html=enhanceArcadeHome(html);
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
-   return res.end(method==='HEAD'?undefined:withGoogleTag(html));
+   return res.end(method==='HEAD'?undefined:withGoogleTag(enhanceArcadeMobile(html,file)));
   }
-  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css','.webmanifest'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')&&file!=='arcade-offline.html'?withGoogleTag(data.toString('utf8')):data));
+  res.writeHead(200,{'Content-Type':mime,'Cache-Control':['.html','.js','.mjs','.css','.webmanifest'].includes(extname(file))?'no-cache':'public, max-age=3600'});return res.end(method==='HEAD'?undefined:(mime.startsWith('text/html')&&file!=='arcade-offline.html'?withGoogleTag(enhanceArcadeMobile(data.toString('utf8'),file)):data));
  }
  if(path==='/portal'||path==='/portal/'){
   const html=(await readFile(join(root,'index.html'),'utf8')).replace('<head>','<head><base href="/">');res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(method==='HEAD'?undefined:withGoogleTag(html));

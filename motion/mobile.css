@@ -1,0 +1,137 @@
+@media (max-width: 760px) {
+  .compact-header .compact-breadcrumb {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+  .compact-header .compact-current {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .compact-header .compact-menu-toggle,
+  .compact-header button,
+  #side-nav .side-link,
+  #side-nav .side-bottom button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .compact-header .compact-menu-toggle {
+    min-width: 44px;
+  }
+  .compact-nav#side-nav {
+    max-width: calc(100% - 32px);
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .compact-header .header-actions {
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+  body:not(.game-tab) > main {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  #home-search, #search, #browser-address, #personal-notes, #chat-input,
+  dialog input:not([type="checkbox"]), dialog textarea, dialog select {
+    font-size: 16px;
+    max-width: 100%;
+  }
+  #home-search-form, #chat-form, #browser-form,
+  .browser-toolbar, .browser-heading, .player-links,
+  .settings-actions, .header-actions {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  #browser-form > input {
+    flex-basis: 100%;
+    min-height: 44px;
+  }
+  #browser-viewport {
+    min-height: 250px;
+    height: 65dvh;
+  }
+  #browser-tabs, #filters {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+  dialog {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px - env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+  dialog :is(button, select), #filters button,
+  #browser-workspace button, #chat-form button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  #player {
+    width: calc(100% - 16px);
+  }
+  #player .playhead #close {
+    width: 44px;
+  }
+  #player .playhead > div:first-child {
+    padding-right: 48px;
+  }
+  #player #stage, #stage iframe {
+    min-height: 0;
+  }
+  #stage iframe {
+    height: clamp(175px, 55dvh, 500px);
+  }
+  #pad {
+    flex-wrap: wrap;
+  }
+  #accountcontent, #statscontent, #settingsform, .compact-explanation article {
+    overflow-wrap: anywhere;
+  }
+  #bottomContainer {
+    left: 0;
+  }
+  #setup input[type="file"] {
+    max-width: 100%;
+  }
+  .mobile-keyboard-note {
+    margin-top: 0;
+  }
+}
+@media (min-width: 761px) and (max-width: 960px) {
+  .compact-header .compact-breadcrumb {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .compact-header .compact-current {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+#slope-touch, .mobile-keyboard-note {
+  display: none;
+}
+@media (any-pointer: coarse) {
+  #slope-touch {
+    position: absolute;
+    inset: auto 12px max(64px, calc(52px + env(safe-area-inset-bottom)));
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  #slope-touch button {
+    pointer-events: auto;
+    touch-action: none;
+    min-width: 64px;
+    min-height: 52px;
+  }
+  #load-screen:not([hidden]) ~ #slope-touch {
+    display: none;
+  }
+  #game-controls {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    opacity: 1;
+  }
+  .mobile-keyboard-note {
+    display: block;
+  }
+}
