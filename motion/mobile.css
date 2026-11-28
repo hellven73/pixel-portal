@@ -1,3 +1,6 @@
+#bottomContainer {
+  left: 0;
+}
 @media (max-width: 760px) {
   .compact-header .compact-breadcrumb {
     flex: 1 1 0;
@@ -85,9 +88,6 @@
   }
   #accountcontent, #statscontent, #settingsform, .compact-explanation article {
     overflow-wrap: anywhere;
-  }
-  #bottomContainer {
-    left: 0;
   }
   #setup input[type="file"] {
     max-width: 100%;

@@ -16,7 +16,7 @@ export function enhanceArcadeMobile(html, file) {
   if (!['index.html', 'arcade.html', 'hextris.html', 'slope.html', 'q2.html', 'manual.html', 'terms.html'].includes(file)) return html;
   const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
   html = html.replace(/<meta\b[^>]*name=["']viewport["'][^>]*>/i, viewport)
-    .replace('</head>', '<link rel="stylesheet" href="mobile.css?v=1"></head>');
+    .replace('</head>', '<link rel="stylesheet" href="mobile.css?v=2"></head>');
   if (file === 'slope.html') {
     return html.replace('</nav>', '</nav><div id="slope-touch" role="group" aria-label="Touch steering"><button type="button" data-key="ArrowLeft" aria-label="Steer left">←</button><button type="button" data-key="ArrowRight" aria-label="Steer right">→</button></div>')
       .replace('WebGL graphics required · Keyboard recommended','WebGL graphics required')
